@@ -1,0 +1,8 @@
+# MVIS authors
+
+Yulin Yang <contact@openmvis.com> — author and maintainer
+
+## Contributors
+
+Yuantai-Z — camera-only pipeline fixes (outlier rejection, pose alignment, frame
+selection) and the ROS1 recalibration tool (`tools/ros1_recalib`)

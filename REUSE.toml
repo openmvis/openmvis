@@ -1,0 +1,48 @@
+version = 1
+
+# Simulator examples (data/sim_examples/<name>/ and the packaged twin_gs): licence per example,
+# also in each setup.yaml header. The VI-Rig and Looper Insight-9 derived examples carry the
+# CC BY-NC 4.0 of the recordings they are built on (commercial use by request, licensing@openmvis.com).
+
+[[annotations]]
+path = ["data/sim_examples/virig_4imus_3cams/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
+SPDX-License-Identifier = "CC-BY-NC-4.0"
+
+[[annotations]]
+path = ["data/sim_examples/elp_t265/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
+SPDX-License-Identifier = "CC-BY-NC-4.0"
+
+[[annotations]]
+path = ["data/sim_examples/tum_vi_raw/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2018 Technical University of Munich (TUM-VI dataset)", "2026 Yulin Yang <contact@openmvis.com>"]
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = ["data/sim_examples/guide06c_60/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
+SPDX-License-Identifier = "CC-BY-NC-4.0"
+
+[[annotations]]
+path = ["data/sim_examples/guide60b/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
+SPDX-License-Identifier = "CC-BY-NC-4.0"
+
+# the two regression twins: as the fixtures they come from (tests/data/twins, the repository licence)
+[[annotations]]
+path = ["src/mvis/simulation/data/examples/twin_gs/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
+SPDX-License-Identifier = "GPL-3.0-only"
+
+[[annotations]]
+path = ["data/sim_examples/twin_rs/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
+SPDX-License-Identifier = "GPL-3.0-only"

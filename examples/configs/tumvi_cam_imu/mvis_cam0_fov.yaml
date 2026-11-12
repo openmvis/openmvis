@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Camera-only fov fit of TUM-VI cam0 (board bag). Stereo wide-FOV fits diverge on
+# this dataset (fx-xi / alpha basin); single-camera is stable. Output feeds
+# cam_imu_fov.yaml as the pinned intrinsics seed.
+#   mvis run -c examples/configs/tumvi_cam_imu/mvis_cam0_fov.yaml
+mode: cam
+board: {board_type: apriltag, rows: 6, cols: 6, tag_size: 0.088, tag_spacing: 0.3, tag_family: t36h11}
+cameras:
+  - camera_id: 0
+    name: cam0
+    source_type: rosbag_topic
+    source_path: ${MVIS_DATASETS}/tum_vi_calib/standard_1024/dataset-calib-cam1_1024_16.bag
+    topic: /cam0/image_raw
+    distortion_model: fov
+    shutter_type: global
+optimizer: {max_iterations: 30, max_init_frames: 150, pixel_sigma: 1.0, huber_threshold: 1.345}
+reference_camera: 0
+output_file: results/tumvi_cam_imu/calib_fov_cam0.yaml
+output_format: yaml

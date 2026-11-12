@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+cameras:
+- id: 0
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 287.27621152965577
+    fy: 287.19417281300184
+    cx: 416.26478489128465
+    cy: 400.704350292964
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.011201664893424756
+    - 0.052720301422881255
+    - -0.05005228972709361
+    - 0.010247312978563648
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0
+- id: 1
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 286.99575914542345
+    fy: 286.7654089763316
+    cx: 410.7703165486927
+    cy: 399.14959007005143
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.006004895476535806
+    - 0.043178913602502055
+    - -0.0413644804558786
+    - 0.007848885407056408
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0

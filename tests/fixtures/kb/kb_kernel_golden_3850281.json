@@ -1,0 +1,7 @@
+{
+ "commit": "3850281def64dc1706bb55e4176c1008336a6d10",
+ "dirty": false,
+ "numpy": "1.26.4",
+ "n_rays": 480,
+ "n_pixels": 96
+}

@@ -1,0 +1,15 @@
+build/
+results/
+__pycache__/
+*.pyc
+*.egg-info/
+*.egg
+dist/
+.pytest_cache/
+*.so
+*.pyd
+# stray result files written to the repo root (results belong in results/)
+/*.json
+.DS_Store
+# local virtual envs (uv / venv)
+.venv/

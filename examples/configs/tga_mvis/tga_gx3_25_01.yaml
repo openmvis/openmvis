@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# t_ga measurement: mvis april bag 01, base IMU = gx3_25 — 3 cameras (all global) + ALL
+# 4 IMUs. Prior intrinsics from the camera-only stage (cam_only_april_01.yaml).
+mode: cam-imu
+input:
+  format: ros1
+  path: ${MVIS_DATASETS}/mvis_4imus_3cams/virig_4imus_3cams_april_01.bag
+  cam_topics:
+    - /blackfly/image_raw          # Blackfly (global)
+    - /t265/fisheye1/image_raw     # T265-1   (global)
+    - /t265/fisheye2/image_raw     # T265-2   (global)
+  imu_topics:
+    - /gx3_25/data
+    - /imu/data
+    - /gx3_35/imu/data
+    - /t265/imu
+  window_mode: motion       # auto-pick the most-exciting 80 s (modern default)
+  segment_length: 80.0
+  cache_dir: /tmp/mvis_detcache
+
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+camera_input:
+  path: examples/configs/tga_mvis/mvis_4imus_3cams_calib.yaml
+
+solve:
+  max_iterations: 40
+  estimate_t_ga: true
+  sigma_t_ga: 0.010        # state_hz inherits modern default 30 (was stale 8)
+
+estimate:
+  camera:
+    intrinsics: false
+    tr: false              # all cameras are global shutter
+    td: true
+    extrinsics: true
+  imu:
+    intrinsics: dw_da
+    model: calyx
+    extrinsics: true
+    td: true
+
+output:
+  path: results/tga_mvis/gx3_25_01/cam_imu.json

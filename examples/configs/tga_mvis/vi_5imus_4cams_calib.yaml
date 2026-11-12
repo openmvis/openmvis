@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Camera prior for the configs next to it: single-camera `mvis cam` solves on the VI-Rig
+# 5imus_4cams recording (at c5864ab), shipped so these examples run as they are.
+source: assembled per-camera intrinsics from single-camera cam-only on 5imus_4cams_01.bag
+  (t265_01 cam0/1 + t265_03 cam2/3, all equidistant fisheye). Cross-camera extrinsics
+  estimated by the cam-IMU stage.
+cameras:
+- id: 0
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 288.1471800141602
+    fy: 287.969840632375
+    cx: 413.9280558663317
+    cy: 405.0254570914298
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.009404781331988554
+    - 0.04578302637474198
+    - -0.0430250078821915
+    - 0.008049733325617394
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0
+- id: 1
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 286.8630048591422
+    fy: 286.50956450135567
+    cx: 413.61271222206557
+    cy: 398.77513637094
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.006451346286881761
+    - 0.040423266092169674
+    - -0.038094936704471186
+    - 0.006541226217397067
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0
+- id: 2
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 287.27621152965577
+    fy: 287.19417281300184
+    cx: 416.26478489128465
+    cy: 400.704350292964
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.011201664893424756
+    - 0.052720301422881255
+    - -0.05005228972709361
+    - 0.010247312978563648
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0
+- id: 3
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 286.99575914542345
+    fy: 286.7654089763316
+    cx: 410.7703165486927
+    cy: 399.14959007005143
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.006004895476535806
+    - 0.043178913602502055
+    - -0.0413644804558786
+    - 0.007848885407056408
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0

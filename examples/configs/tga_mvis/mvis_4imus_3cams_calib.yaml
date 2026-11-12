@@ -1,0 +1,125 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Camera prior for the configs next to it: per-camera medians of `mvis cam` solves on the
+# VI-Rig 4imus_3cams recordings (at c5864ab), shipped so these examples run as they are.
+source: 'per-camera median of single-camera solves (cam0: 10; cam1: 10; cam2: 10);
+  extrinsics + time offsets kept from the seed'
+cameras:
+- id: 0
+  model: pinhole_radtan
+  intrinsics:
+    fx: 450.86711027126194
+    fy: 450.85387180818054
+    cx: 368.7765466822725
+    cy: 279.3341500338614
+  distortion:
+    model: radtan
+    coeffs:
+    - -0.32509667133062115
+    - 0.09584086025845817
+    - 0.0002316587496415108
+    - -3.8091949003965376e-05
+  image_size:
+  - 720
+  - 540
+  rolling_shutter_readout: 0.0
+- id: 1
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 286.7609852349825
+    fy: 286.7307787553235
+    cx: 414.95048781065645
+    cy: 404.5163866859639
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.0048602855193616646
+    - 0.03630728447531942
+    - -0.03527767594126116
+    - 0.005886578086983354
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0
+- id: 2
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 286.9198088468522
+    fy: 286.72497563179843
+    cx: 414.3218875675151
+    cy: 398.66776453261076
+  distortion:
+    model: equidistant
+    coeffs:
+    - -0.006976584040031526
+    - 0.04188810504591071
+    - -0.0412584035288784
+    - 0.008462403555989706
+  image_size:
+  - 848
+  - 800
+  rolling_shutter_readout: 0.0
+extrinsics:
+  reference_camera: 0
+  transforms:
+  - from: 1
+    to: 0
+    T_to_from:
+    - - 0.9998894651010144
+      - -0.012730952813123524
+      - 0.007679871123871683
+      - -0.03737228110230717
+    - - 0.012615335283841506
+      - 0.9998091090019162
+      - 0.014919747734850997
+      - 0.05165169683619479
+    - - -0.007868347710003887
+      - -0.014821214432877738
+      - 0.9998592004412664
+      - 0.03158705951653852
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+    so3:
+    - -0.014871577198352458
+    - 0.007774682452464735
+    - 0.012674078195583926
+    translation:
+    - -0.03737228110230717
+    - 0.05165169683619479
+    - 0.03158705951653852
+  - from: 2
+    to: 0
+    T_to_from:
+    - - 0.9997335128170951
+      - -0.013228450849358944
+      - 0.018918547473789783
+      - 0.02712959323135141
+    - - 0.01294005410666437
+      - 0.9997994241619572
+      - 0.015286152070908162
+      - 0.05205907991610934
+    - - -0.01911696498162142
+      - -0.01503727147937514
+      - 0.9997041672996809
+      - 0.027707076751407423
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+    so3:
+    - -0.015163639870173126
+    - 0.019020174690860432
+    - 0.013085916385264849
+    translation:
+    - 0.02712959323135141
+    - 0.05205907991610934
+    - 0.027707076751407423
+time_offsets:
+  reference_camera: 0
+  offsets:
+  - camera: 1
+    dt: -0.0031668068618575114
+  - camera: 2
+    dt: -0.0059264304892471175

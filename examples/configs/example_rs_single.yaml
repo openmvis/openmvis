@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# MVIS — Single-Camera Rolling Shutter
+#
+# One rolling shutter camera. RS readout calibrated automatically
+# when shutter_type: rolling is set. No multi-camera alignment.
+#
+# Run with:   mvis run -c examples/configs/example_rs_single.yaml   (or: mvis cam -c ...)
+
+mode: cam
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+input:
+  cameras:
+    - camera_id: 0
+      name: cam0
+      source_type: rosbag_topic
+      source_path: /path/to/recording.bag
+      topic: /cam0/image_raw
+      distortion_model: radtan
+      shutter_type: rolling       # RS readout will be calibrated
+      factor_hz: 15.0             # higher rate needed for RS estimation
+
+solve:
+  max_iterations: 15
+  pixel_sigma: 1.0
+  huber_threshold: 1.345
+
+corner_subsample: top_left
+rerun_outliers: true
+
+reference_camera: 0
+output:
+  path: rs_single_result.yaml
+  format: yaml

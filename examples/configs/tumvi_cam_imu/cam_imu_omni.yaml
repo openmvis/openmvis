@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Cam-IMU calibration — TUM-VI raw IMU-calib bags, stereo omni_radtan + imu0.
+#
+# Validates the omni_radtan model end-to-end on REAL data. The camera intrinsics
+# come straight from the Kalibr cam camchain (camera_model: omni, distortion:
+# radtan -> our omni_radtan, with xi packed first); the cam-IMU solve recovers
+# T_CtoI / td / stereo baseline. Pinned intrinsics (the safe choice for omni —
+# fx/xi share a gauge that a single sequence does not pin; see README).
+#
+# Run (override input.path for dataset-calib-imu{1,2,3,4}.bag):
+#   mvis cam-imu -c examples/configs/tumvi_cam_imu/cam_imu_omni.yaml
+#
+# Reference to compare against (Kalibr):
+#   ${MVIS_DATASETS}/tum_vi_calib/omni-radtan-1024/results-imucam-imucalib.txt
+#     cam0 lever [46.2, -70.9, -43.7] mm, baseline 100.94 mm, td ~0, reproj ~0.11 px
+
+mode: cam-imu
+input:
+  format: ros1
+  path: ${MVIS_DATASETS}/tum_vi_calib/raw/dataset-calib-imu1.bag
+  imu_topics: ["/imu0"]
+  window_mode: manual    # keep the explicit t0/window below (was the pre-motion default)
+  t0: 3.0
+  window: 45.0
+  cache_dir: /tmp/mvis_tumvi_detcache
+
+board:                                # TUM-VI AprilGrid: 6x6 t36h11, 8.8 cm tags
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+camera_input:                         # Kalibr omni/radtan camchain -> omni_radtan
+  path: ${MVIS_DATASETS}/tum_vi_calib/raw/dataset-calib-cam1-camchain.yaml
+  free_intrinsics: false              # pin (omni fx-xi gauge); free->intrinsic drift
+  estimate_readout: false                        # global shutter
+
+solve:
+  state_hz: 8.0
+  max_iterations: 40
+  imu_intrinsics: dw_da               # free gyro/accel scale + misalignment
+  corner_subsample: top_left
+  sigma_td_prior: 0.0
+  init_kwargs: {keyframe_hz: 2.0, scale_rel_tol: 0.3}
+
+output:
+  path: results/tumvi_cam_imu/imu1_omni.json

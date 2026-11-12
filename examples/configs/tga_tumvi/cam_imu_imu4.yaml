@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Cam-IMU regression: TUM-VI raw (dataset-calib-cam1) — stereo + imu0 (single IMU).
+# Prior intrinsics from the camera-only stage (the existing tum_vi_raw/cam1.yaml
+# cam-only config -> committed *_calib.yaml).
+mode: cam-imu
+input:
+  format: ros1
+  path: ${MVIS_DATASETS}/tum_vi_calib/raw/dataset-calib-imu4.bag
+  cam_topics:
+    - /cam0/image_raw
+    - /cam1/image_raw
+  imu_topics: ["/imu0"]
+  window_mode: motion       # auto-pick the most-exciting 80 s (modern default)
+  segment_length: 80.0
+  cache_dir: /tmp/mvis_detcache
+
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+camera_input:
+  path: examples/configs/tga_tumvi/tum_vi_raw_calib.yaml
+  cameras:                 # base cam0 (global) tracks state_hz; cam1 aux at 8 Hz
+    - {estimate_readout: false}
+    - {estimate_readout: false, factor_hz: 8.0}
+
+solve:
+  max_iterations: 40        # state_hz inherits modern default 30 (was 20; chord-safe)
+  estimate_t_ga: true
+  sigma_t_ga: 0.010
+
+estimate:
+  camera:
+    intrinsics: false
+    tr: false              # TUM-VI raw 1024 is global shutter
+    td: true
+    extrinsics: true
+  imu:
+    intrinsics: dw_da
+    model: calyx
+
+output:
+  path: results/tga_tumvi/imu4/cam_imu.json

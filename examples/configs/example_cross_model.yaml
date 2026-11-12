@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# MVIS — Cross-Model Stereo (ELP + T265 style)
+#
+# Two cameras with different lenses, distortion models, and shutter types.
+# Time offset calibrated automatically (cameras not hw-synced).
+#
+# Run with:   mvis run -c examples/configs/example_cross_model.yaml   (or: mvis cam -c ...)
+
+mode: cam
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+input:
+  cameras:
+    - camera_id: 0
+      name: ELP
+      source_type: rosbag_topic
+      source_path: /path/to/recording.bag
+      topic: /elp/image_raw
+      distortion_model: radtan
+      shutter_type: rolling
+      factor_hz: 10.0
+
+    - camera_id: 1
+      name: T265
+      source_type: rosbag_topic
+      source_path: /path/to/recording.bag
+      topic: /t265/image_raw
+      distortion_model: equidistant
+      shutter_type: global
+      factor_hz: 10.0
+
+solve:
+  max_iterations: 15
+  pixel_sigma: 1.0
+  huber_threshold: 1.345
+
+corner_subsample: top_left
+rerun_outliers: true
+optimize_time_offset: true    # cameras not hw-synced
+
+reference_camera: 1           # GS camera as reference
+output:
+  path: cross_model_result.yaml
+  format: yaml

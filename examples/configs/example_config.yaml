@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# MVIS — Example Configuration
+#
+# Single-camera calibration with AprilGrid target.
+# See README.md for full documentation of all options.
+#
+# Run with:   mvis run -c examples/configs/example_config.yaml   (or: mvis cam -c ...)
+
+mode: cam
+board:
+  board_type: apriltag          # apriltag | chessboard | aruco
+  rows: 6                      # tag rows (chessboard: inner corner rows)
+  cols: 6                      # tag cols (chessboard: inner corner cols)
+  tag_size: 0.088               # tag size in meters (chessboard: square_size)
+  tag_spacing: 0.3              # gap between tags as fraction of tag_size
+  tag_family: t36h11            # AprilTag family
+
+input:
+  cameras:
+    - camera_id: 0
+      source_type: images         # images | rosbag_topic | video | euroc
+      source_path: /path/to/camera0/images
+      distortion_model: radtan    # radtan | equidistant | double_sphere | eucm | fov
+      shutter_type: global        # global | rolling (rolling enables RS readout calibration)
+      factor_hz: 5.0              # subsample to this frame rate (0 = use all frames)
+
+solve:
+  max_iterations: 15            # LM iterations for joint optimization
+  max_init_frames: 100          # max frames for OpenCV init (0 = no cap)
+  pixel_sigma: 1.0              # observation noise sigma (pixels)
+  huber_threshold: 1.345        # Huber robust loss threshold
+
+# Per-tag corner subsampling for AprilGrid:
+#   top_left — 1 corner/tag (the camera-only default is two_anti), ~3-4x speedup, <0.1% quality drift
+#   two_diag — 2 corners/tag (diagonal pair), ~2x speedup
+#   all — 4 corners/tag, full data, no speedup
+corner_subsample: top_left
+
+# Enable outlier-driven rerun: filter outlier observations after
+# joint optimization, then rerun warm-started.
+rerun_outliers: true
+
+# Enable camera-camera time offset optimization (multi-camera only).
+optimize_time_offset: true
+
+# Launch Rerun 3D viewer after calibration.
+rerun_visualization: false
+
+reference_camera: 0
+output:
+  path: calibration_result.yaml
+  format: yaml

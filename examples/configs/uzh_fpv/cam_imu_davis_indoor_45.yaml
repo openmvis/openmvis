@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Cam-IMU full calibration — UZH-FPV indoor_45 davis imu bag (all params free).
+#
+# Board (official target.yaml, all sequences): AprilGrid 5 cols x 4 rows,
+# tag 0.075 m, spacing 0.2, t36h11.
+#
+# Run:
+#   mvis cam-imu -c examples/configs/uzh_fpv/cam_imu_davis_indoor_45.yaml
+# Round-trip validation:
+#   mvis roundtrip -c examples/configs/uzh_fpv/cam_imu_davis_indoor_45.yaml
+#
+# Reference (Kalibr, shipped zip):
+#   ${MVIS_DATASETS}/UZH/indoor_45_calib_davis/indoor_45_calib_davis/camchain-imucam-..indoor_45_calib_davis_imu.yaml
+
+mode: cam-imu
+input:
+  format: ros1
+  path: ${MVIS_DATASETS}/UZH/davis/indoor_45_calib_davis_imu.bag
+  imu_topics: ["/davis/imu"]
+  cache_dir: /tmp/mvis_uzh_detcache
+
+board:
+  board_type: apriltag
+  rows: 4
+  cols: 5
+  tag_size: 0.075
+  tag_spacing: 0.2
+  tag_family: t36h11
+
+camera_input:
+  path: ${MVIS_DATASETS}/UZH/indoor_45_calib_davis/indoor_45_calib_davis/camchain-..indoor_45_calib_davis_cam.yaml
+  estimate_readout: false
+
+solve:
+  imu_intrinsics: dw_da
+  estimate_t_ga: true
+
+output:
+  path: results/uzh_fpv/davis_indoor_45_cam_imu.json

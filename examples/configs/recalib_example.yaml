@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Calibration-corrected dataset export — recalib config.
+# Apply a saved cam-IMU calibration back onto a raw ROS1 bag and re-record it
+# *calibration-corrected* (IMU intrinsics Dw/Da/Tg + static bias removed; every
+# camera/aux-IMU stream re-stamped onto the base-IMU clock by its td).
+#
+#   mvis apply-calib -c examples/configs/recalib_example.yaml
+#
+# The calib records each sensor's source topic, so the topic->sensor mapping is
+# AUTO-DERIVED — no `mapping` needed (unless the calib predates that, or you want
+# to override). CLI flags override anything set here.
+
+calib:  examples/configs/example_recalib_calib.yaml   # calibration to apply (must carry imu_intr_xi + per-sensor topics); shipped copy of the tum_vi_raw imu1 result
+input:  ${MVIS_DATASETS}/tum_vi_calib/raw/dataset-calib-cam1.bag
+output: /tmp/recalib/dataset-calib-cam1.corrected.bag          # optional; default = <input>.corrected.bag
+
+# --- optional corrections (defaults shown) ---
+remove_bias: true     # subtract the calibrated static b_g/b_a (set false to keep bias for downstream VIO)
+undistort:   false    # also rectify image pixels (default: re-stamp only, pixels untouched)
+imu_intrinsics: true  # inverse IMU model (Dw/Da/Tg); false = bias only     (CLI --no-imu-intrinsics)
+td:          true     # re-stamp header + record time by each sensor's td    (CLI --no-td)
+t_ga:        true     # re-interpolate accel at t + t_ga when calibrated     (CLI --no-t-ga)
+strict:      false    # reject missing/empty topics, wrong types, unsupported undistort input,
+                      # duplicate t_ga stamps and non-finite IMU output     (CLI --strict)
+
+# --- optional mapping override (normally auto-derived from the calib's stored topics) ---
+# base_imu_topic: /imu0
+# mapping:
+#   /imu0: imu0
+#   /cam0/image_raw: cam0
+#   /cam1/image_raw: cam1

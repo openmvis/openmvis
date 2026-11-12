@@ -1,0 +1,105 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+name: package
+
+# Builds the pymvis distribution and proves it is installable from a CLEAN
+# environment. This exists because the extras were wrong once: matplotlib and
+# plotly were imported eagerly by the CLI report path while being declared
+# optional (or not at all), so `pip install pymvis` produced a toolbox whose
+# `mvis --help` died on ModuleNotFoundError. A green conda dev env cannot catch
+# that -- only a from-scratch install can.
+#
+# NOTE: this workflow deliberately does NOT publish; uploading to PyPI is a
+# separate release step.
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # GTSAM 4.2.2 publishes no sdist and only cp311+ wheels.
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build sdist + wheel
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+
+      - name: Validate distribution metadata
+        run: python -m twine check dist/*
+
+      - name: Assert the wheel is pure-Python and free of build junk
+        run: |
+          python - <<'PY'
+          import glob, sys, zipfile
+          whl, = glob.glob("dist/*.whl")
+          assert whl.endswith("-py3-none-any.whl"), f"not a pure-Python wheel: {whl}"
+          names = zipfile.ZipFile(whl).namelist()
+          junk = [n for n in names if "__pycache__" in n or n.endswith(".pyc")]
+          assert not junk, f"build junk in wheel: {junk[:5]}"
+          tops = {n.split("/")[0] for n in names}
+          assert tops == {"mvis"} | {t for t in tops if t.endswith(".dist-info")}, tops
+          print(f"OK {whl}: {len(names)} entries")
+          PY
+
+      - name: Install the built wheel into a clean venv (base deps only)
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install --upgrade pip
+          /tmp/clean/bin/pip install dist/*.whl
+
+      - name: Every module must import with no extras installed
+        run: |
+          /tmp/clean/bin/python - <<'PY'
+          import importlib, pkgutil, mvis
+          bad = []
+          for m in pkgutil.walk_packages(mvis.__path__, "mvis."):
+              try:
+                  importlib.import_module(m.name)
+              except Exception as e:
+                  bad.append((m.name, type(e).__name__, str(e)[:80]))
+          for b in bad:
+              print("FAIL", *b)
+          raise SystemExit(1 if bad else 0)
+          PY
+
+      - name: CLI entry point and every subcommand must respond
+        run: |
+          /tmp/clean/bin/mvis --help
+          /tmp/clean/bin/mvis --version
+          /tmp/clean/bin/mvis datasets list > /dev/null   # packaged catalog
+          for c in calibrate cam cam-imu apply-calib roundtrip run inspect check verdict datasets; do
+            echo "--- mvis $c --help"
+            /tmp/clean/bin/mvis "$c" --help > /dev/null
+          done
+
+      - name: GTSAM must accept a NumPy array (the NumPy 2 ABI trap)
+        run: |
+          /tmp/clean/bin/python - <<'PY'
+          import numpy as np, gtsam
+          assert np.__version__.startswith("1."), f"numpy<2 pin failed: {np.__version__}"
+          p = gtsam.Pose3(gtsam.Rot3(), np.array([1.0, 2.0, 3.0]))
+          print("gtsam OK:", p.translation())
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: pymvis-dist-py${{ matrix.python-version }}
+          path: dist/*

@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# MVIS — Fisheye Stereo (TUM-VI style)
+#
+# Two equidistant (KB4) fisheye cameras, global shutter,
+# hardware-synchronized (no time offset).
+#
+# Run with:   mvis run -c examples/configs/example_fisheye_stereo.yaml   (or: mvis cam -c ...)
+
+mode: cam
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+input:
+  cameras:
+    - camera_id: 0
+      name: cam0
+      source_type: rosbag_topic
+      source_path: /path/to/recording.bag
+      topic: /cam0/image_raw
+      distortion_model: equidistant
+      shutter_type: global
+      factor_hz: 5.0
+
+    - camera_id: 1
+      name: cam1
+      source_type: rosbag_topic
+      source_path: /path/to/recording.bag
+      topic: /cam1/image_raw
+      distortion_model: equidistant
+      shutter_type: global
+      factor_hz: 5.0
+
+solve:
+  max_iterations: 15
+  pixel_sigma: 1.0
+  huber_threshold: 1.345
+
+corner_subsample: top_left
+rerun_outliers: true
+optimize_time_offset: false   # hw-synced cameras
+
+reference_camera: 0
+output:
+  path: fisheye_stereo_result.yaml
+  format: yaml

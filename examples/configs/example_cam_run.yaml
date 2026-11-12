@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# MVIS — camera-only calibration, SECTIONED (CamRunConfig) shape.
+#
+# Run with:   mvis cam -c examples/configs/example_cam_run.yaml
+#         or: mvis run -c examples/configs/example_cam_run.yaml   (mode: cam)
+#
+# This mirrors the cam-IMU CamImuRunConfig layout (input / board / solve / output).
+# The legacy FLAT shape (top-level cameras: / optimizer: / output_file:, run with
+# `mvis calibrate`) still loads; tests/data/configs/legacy_flat_cam.yaml keeps one.
+
+mode: cam                          # optional; lets `mvis run` dispatch
+
+input:
+  cameras:
+    - camera_id: 0
+      source_type: rosbag_topic
+      source_path: /path/to/rig.bag
+      topic: /cam0/image_raw
+      distortion_model: radtan     # radtan | equidistant | double_sphere | eucm | fov
+      shutter_type: global         # global | rolling
+      factor_hz: 5.0               # per-camera frame/vision-factor rate (override)
+    - camera_id: 1
+      source_type: rosbag_topic
+      source_path: /path/to/rig.bag
+      topic: /cam1/image_raw
+      distortion_model: equidistant
+      shutter_type: global
+      # no factor_hz here -> inherits solve.factor_hz below
+
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+solve:                             # the camera-only OptimizerConfig
+  max_iterations: 15
+  pixel_sigma: 1.0                 # (alias: sigma_px)
+  huber_threshold: 1.345
+  factor_hz: 5.0                   # global per-camera default (cameras omitting their own inherit this)
+
+output:
+  path: mvis.yaml
+  format: yaml
+
+# Unified `estimate:` switchboard (unified-estimate) — the canonical way to choose
+# what to calibrate; writes through to solve.optimize_* (estimate wins, warns on
+# conflict). Camera-only consumes camera.{intrinsics,td,tr}; camera.distortion /
+# camera.extrinsics / board_points and the imu sub-block are recorded/warned but
+# not yet acted on by the camera-only solver.
+estimate:
+  camera:
+    intrinsics: true     # refine camera intrinsics (false = pin)
+    td:         false    # camera-camera time offset (multi-cam, unsynced)
+    tr:         false    # rolling-shutter readout (+ per-camera shutter_type)
+
+reference_camera: 0
+corner_subsample: top_left
+rerun_outliers: true

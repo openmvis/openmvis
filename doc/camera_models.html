@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Camera Projection Models — MVIS Reference</title>
+<script>
+MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; margin: 40px auto; max-width: 960px; line-height: 1.7; color: #333; }
+h1 { color: #1565C0; border-bottom: 2px solid #1565C0; padding-bottom: 8px; }
+h2 { color: #1976D2; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+h3 { color: #1E88E5; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+th, td { border: 1px solid #ccc; padding: 6px 10px; font-size: 14px; }
+th { background: #E3F2FD; text-align: left; }
+.note { background: #FFF3E0; border-left: 4px solid #FF9800; padding: 8px 12px; margin: 12px 0; font-size: 13px; }
+.status { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+.supported { background: #C8E6C9; color: #2E7D32; }
+.planned { background: #FFF9C4; color: #F57F17; }
+.research { background: #E3F2FD; color: #1565C0; }
+.eq-block { background: #F5F5F5; border: 1px solid #ddd; border-radius: 4px; padding: 16px 20px; margin: 12px 0; }
+a { color: #1976D2; }
+</style>
+</head>
+<body>
+
+<h1>Camera Projection &amp; Distortion Models</h1>
+<p>Comprehensive reference for all camera models relevant to MVIS.
+Based on survey of Kalibr, Basalt, OpenCV, ORB-SLAM3, and original papers.</p>
+
+<table>
+<tr><th>Model</th><th>Params</th><th>Max FOV</th><th>Unproject</th><th>Status</th><th>Use case</th></tr>
+<tr><td>Pinhole + RadTan</td><td>4+4</td><td>~140&deg;</td><td>Iterative</td><td><span class="status supported">Supported</span></td><td>Standard lenses, automotive</td></tr>
+<tr><td>Pinhole + Equidistant (KB polynomial on x/z; <code>distortion_model: kb4</code> is a different model, below)</td><td>4+4</td><td>&lt;180&deg; (divides by $Z$, so it stops at 90&deg; off axis)</td><td>Newton</td><td><span class="status supported">Supported</span></td><td>Fisheyes with every corner under 90&deg;, where it gives the same pixels as kb4. <code>distortion_model: equidistant</code></td></tr>
+<tr><td>Kannala-Brandt KB4 (&theta; from atan2)</td><td>4+4</td><td>&gt;180&deg;, up to the first fold</td><td>Newton (safeguarded)</td><td><span class="status supported">Supported</span></td><td>Fisheyes, including corners past 90&deg;. <code>distortion_model: kb4</code>; <code>fisheye</code> and <code>kannala_brandt</code> mean kb4</td></tr>
+<tr><td>FOV (Devernay)</td><td>4+1</td><td>~180&deg;</td><td>Closed-form</td><td><span class="status supported">Supported</span></td><td>Simple fisheye, webcams</td></tr>
+<tr><td>Double Sphere (DS)</td><td>6</td><td>~195&deg;</td><td>Closed-form</td><td><span class="status supported">Supported</span></td><td>Fisheye (Basalt default)</td></tr>
+<tr><td>Extended Unified (EUCM)</td><td>6</td><td>~195&deg;</td><td>Closed-form</td><td><span class="status supported">Supported</span></td><td>General wide-angle</td></tr>
+<tr><td>Unified (UCM)</td><td>5</td><td>~180&deg;+</td><td>Closed-form</td><td><span class="status supported">Supported</span></td><td>Fisheye; EUCM with $\beta=1$. <code>distortion_model: ucm</code>, params fx,fy,cx,cy + alpha; Kalibr <code>omni-none</code>, Basalt <code>ucm</code></td></tr>
+<tr><td>Unified/Omni (Mei) + RadTan</td><td>4+5</td><td>~360&deg;</td><td>Closed-form*</td><td><span class="status supported">Supported</span></td><td>Catadioptric, omni. <code>distortion_model: omni_radtan</code>, params fx,fy,cx,cy + xi,k1,k2,p1,p2</td></tr>
+<tr><td>Scaramuzza (OCamCalib)</td><td>~10</td><td>Any</td><td>Closed-form</td><td><span class="status research">Research</span></td><td>Arbitrary omni</td></tr>
+<tr><td>Equirectangular</td><td>4</td><td>360&deg;</td><td>Closed-form</td><td><span class="status research">Research</span></td><td>360&deg; cameras, VR</td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2>1. Pinhole + Radial-Tangential (Brown-Conrady)</h2>
+
+<p><strong>Paper:</strong> D.C. Brown, "Decentering Distortion of Lenses," <em>Photogrammetric Engineering</em>, 1966.<br>
+<strong>Used by:</strong> OpenCV (default), COLMAP, ORB-SLAM2/3, Kalibr, MVIS<br>
+<strong>FOV:</strong> Up to ~140&deg;</p>
+
+<h3>Forward Projection (3D &rarr; 2D)</h3>
+
+<div class="eq-block">
+<p><strong>Step 1 — Perspective division:</strong></p>
+$$x = \frac{X}{Z}, \quad y = \frac{Y}{Z}, \quad r^2 = x^2 + y^2$$
+
+<p><strong>Step 2 — Radial distortion:</strong></p>
+$$d_r = 1 + k_1 r^2 + k_2 r^4$$
+
+<p><strong>Step 3 — Tangential distortion:</strong></p>
+$$\Delta x = 2 p_1 x y + p_2 (r^2 + 2x^2)$$
+$$\Delta y = p_1 (r^2 + 2y^2) + 2 p_2 x y$$
+
+<p><strong>Step 4 — Distorted coordinates + pixel mapping:</strong></p>
+$$x_d = x \cdot d_r + \Delta x, \quad y_d = y \cdot d_r + \Delta y$$
+$$u = f_x \cdot x_d + c_x, \quad v = f_y \cdot y_d + c_y$$
+</div>
+
+<h3>Parameters (8)</h3>
+<table>
+<tr><th>Parameter</th><th>Meaning</th></tr>
+<tr><td>$f_x, f_y$</td><td>Focal length (pixels)</td></tr>
+<tr><td>$c_x, c_y$</td><td>Principal point (pixels)</td></tr>
+<tr><td>$k_1, k_2$</td><td>Radial distortion coefficients</td></tr>
+<tr><td>$p_1, p_2$</td><td>Tangential (decentering) distortion</td></tr>
+</table>
+
+<h3>Unprojection (Iterative)</h3>
+<div class="eq-block">
+<p>Initialize: $x_0 = \frac{u - c_x}{f_x}, \; y_0 = \frac{v - c_y}{f_y}$</p>
+<p>Iterate until convergence:</p>
+$$x_{i+1} = \frac{x_0 - \Delta x(x_i, y_i)}{d_r(x_i, y_i)}, \quad y_{i+1} = \frac{y_0 - \Delta y(x_i, y_i)}{d_r(x_i, y_i)}$$
+<p>Typically converges in 5&ndash;20 iterations.</p>
+</div>
+
+<h3>Jacobian</h3>
+<div class="eq-block">
+<p>Let $D = \frac{\partial d_r}{\partial r^2} = k_1 + 2k_2 r^2$. Then:</p>
+$$\frac{\partial x_d}{\partial x} = d_r + 2x^2 D + 2p_1 y + 6p_2 x$$
+$$\frac{\partial x_d}{\partial y} = 2xy D + 2p_1 x + 2p_2 y$$
+$$\frac{\partial y_d}{\partial x} = 2xy D + 2p_1 x + 2p_2 y$$
+$$\frac{\partial y_d}{\partial y} = d_r + 2y^2 D + 6p_1 y + 2p_2 x$$
+
+<p>Full Jacobian: $\frac{\partial(u,v)}{\partial(X,Y,Z)} = \text{diag}(f_x, f_y) \cdot \mathbf{J}_\text{dist} \cdot \mathbf{J}_\text{persp}$</p>
+<p>where $\mathbf{J}_\text{persp} = \begin{bmatrix} 1/Z & 0 & -X/Z^2 \\ 0 & 1/Z & -Y/Z^2 \end{bmatrix}$</p>
+</div>
+
+<!-- ================================================================ -->
+<h2>2. Equidistant (Kannala-Brandt polynomial on x/z)</h2>
+
+<p><strong>Paper:</strong> J. Kannala &amp; S. Brandt, "A Generic Camera Model and Calibration Method for Conventional, Wide-Angle, and Fish-Eye Lenses," <em>IEEE TPAMI</em>, 2006.<br>
+<strong>Used by:</strong> OpenCV fisheye, Basalt, ORB-SLAM3, Kalibr, MVIS<br>
+<strong>FOV:</strong> Up to ~195&deg;</p>
+
+<h3>Forward Projection</h3>
+<div class="eq-block">
+<p><strong>Step 1 — Incidence angle:</strong></p>
+$$\theta = \arctan\left(\frac{\sqrt{X^2 + Y^2}}{Z}\right), \quad \phi = \arctan2(Y, X)$$
+
+<p><strong>Step 2 — Distorted angle (odd-power polynomial):</strong></p>
+$$\theta_d = \theta + k_1 \theta^3 + k_2 \theta^5 + k_3 \theta^7 + k_4 \theta^9$$
+
+<p><strong>Step 3 — Project:</strong></p>
+$$x_d = \theta_d \cos\phi, \quad y_d = \theta_d \sin\phi$$
+<p>(equivalently, $x_d = \frac{\theta_d}{r} x$, $y_d = \frac{\theta_d}{r} y$ where $r = \sqrt{x^2 + y^2}$)</p>
+
+<p><strong>Step 4 — Pixel coordinates:</strong></p>
+$$u = f_x \cdot x_d + c_x, \quad v = f_y \cdot y_d + c_y$$
+</div>
+
+<h3>Parameters (8)</h3>
+<table>
+<tr><th>Parameter</th><th>Meaning</th></tr>
+<tr><td>$f_x, f_y, c_x, c_y$</td><td>Intrinsics</td></tr>
+<tr><td>$k_1, k_2, k_3, k_4$</td><td>Angular distortion coefficients</td></tr>
+</table>
+
+<h3>Unprojection (Newton's method)</h3>
+<div class="eq-block">
+<p>Given pixel $(u,v)$, compute $\theta_d = \sqrt{x_d^2 + y_d^2}$, $\phi = \arctan2(y_d, x_d)$.</p>
+<p>Solve for $\theta$ via Newton iteration:</p>
+$$f(\theta) = \theta + k_1\theta^3 + k_2\theta^5 + k_3\theta^7 + k_4\theta^9 - \theta_d$$
+$$f'(\theta) = 1 + 3k_1\theta^2 + 5k_2\theta^4 + 7k_3\theta^6 + 9k_4\theta^8$$
+$$\theta_{i+1} = \theta_i - \frac{f(\theta_i)}{f'(\theta_i)}, \quad \theta_0 = \theta_d$$
+<p>Then: $\mathbf{r} = [\sin\theta\cos\phi, \; \sin\theta\sin\phi, \; \cos\theta]^\top$</p>
+</div>
+
+<h3>Jacobian</h3>
+<div class="eq-block">
+<p>Let $s = \theta_d / r$ (scaling), $D' = \frac{\partial\theta_d}{\partial\theta} = 1 + 3k_1\theta^2 + 5k_2\theta^4 + 7k_3\theta^6 + 9k_4\theta^8$:</p>
+$$\frac{\partial x_d}{\partial x} = s + \frac{x^2}{r^2}\left(\frac{D'}{1+r^2} - s\right)$$
+$$\frac{\partial x_d}{\partial y} = \frac{xy}{r^2}\left(\frac{D'}{1+r^2} - s\right)$$
+</div>
+
+<h3>KB4 — four radial terms, &theta; from atan2 (<code>distortion_model: kb4</code>)</h3>
+<p>cal_vec <code>[fx, fy, cx, cy, k1, k2, k3, k4]</code> (8 parameters), the same as Basalt's <code>kb4</code>:</p>
+<div class="math">
+$$\theta = \operatorname{atan2}(\sqrt{X^2+Y^2},\, Z), \qquad \theta_d = \theta(1 + k_1\theta^2 + k_2\theta^4 + k_3\theta^6 + k_4\theta^8)$$
+$$u = f_x \theta_d \frac{X}{\sqrt{X^2+Y^2}} + c_x, \qquad v = f_y \theta_d \frac{Y}{\sqrt{X^2+Y^2}} + c_y$$
+</div>
+<p><strong>Against <code>equidistant</code>.</strong> The same polynomial, a different domain. <code>equidistant</code>
+(gtsam Cal3Fisheye, Kalibr pinhole-equi) divides by $Z$ first, so it stops at 90&deg;; <code>kb4</code> does not.
+Below 90&deg; the two kernels agree to 1e-9 px. That is also why a <code>kb4</code> camera exports to Kalibr as
+pinhole-equi with the same coefficients: exact in front of the camera, with no pixel for a ray at or past 90&deg;,
+and the export warns when the fit used such corners or the fold lies inside the image. The generic names
+<code>fisheye</code> and <code>kannala_brandt</code> mean <code>kb4</code>; only <code>equidistant</code> itself selects equidistant. Solves are not bit-identical, because the camera-only pose Jacobian
+and the initial inverse differ.</p>
+<p><strong>Valid domain.</strong> $0 \le \theta &lt; \min(\pi, \theta_\text{fold})$, where $\theta_\text{fold}$ is the first
+positive root of $1 + 3k_1x + 5k_2x^2 + 7k_3x^3 + 9k_4x^4$ with $x = \theta^2$. Past it, projection fails and pixels
+unproject to invalid, never to a wrong ray. A fold does not stop a solve. <code>corner_accounting</code> in the result
+counts the corners past it, and the fold level is <code>none</code> (fold absent or outside the image),
+<code>warn</code> (inside the image, past the data, or $\theta$ reaches $\pi$ inside the image) or <code>alarm</code>
+(observed corners past the fold). In cam-IMU such a corner has a zero residual, so it lowers the cost rather than raising it.</p>
+<p><strong>Reported domain.</strong> Pixels farther than $R_{fold} = \min(f_x, f_y)\,\theta_d(\theta_{fold})$ from $(c_x, c_y)$
+have no ray. After every kb4 solve (camera-only and cam-IMU) MVIS computes $\theta_{fold}$ and $R_{fold}$, logs them, adds them
+to the text / HTML reports and to the output yaml as camera metadata <code>valid_domain</code> (<code>fold_theta_rad</code>,
+<code>max_theta_rad</code>, <code>max_radius_px</code>, <code>corner_radius_px</code>, <code>covers_image</code>; readers
+ignore it, it is not a required key), and logs a <strong>WARNING</strong> &mdash; not a guardrail failure &mdash; when
+$R_{fold}$ is below the image-corner radius (the farthest image corner from $(c_x, c_y)$). Reports tag that case
+<code>FOLDS INSIDE IMAGE</code> when a real fold ends the domain, and <code>VALID DOMAIN ENDS INSIDE IMAGE</code> when
+$\theta_d$ is monotonic and only $R(\pi)$ falls short of the corner (a short focal, no fold).
+Kernels: <code>custom_projections.project_kb / unproject_kb</code>.</p>
+<p><strong>Pass-2 revert.</strong> When the pass-2 guardrail fires, the revert is rig-wide for every model: pass 2 is one
+joint solve, so one camera's pass-1 intrinsics cannot be spliced into the pass-2 extrinsics.</p>
+<p><strong>Limits.</strong> Single solve from the equidistant init. PnP keeps its 80&deg; ray limit, and feature mode stays
+front-hemisphere. The Kalibr export is pinhole-equi (above), so rays at or past 90&deg; have no pixel there.
+<code>--undistort</code> refuses it. Basalt has no fold check, so parity with Basalt holds on in-domain rays only.</p>
+
+<p><strong>Jacobian sketch</strong> (analytic; finite-difference checked for point and intrinsics, near-axis and
+$\theta &gt; \pi/2$ included). On the optical axis ($\rho &lt; 10^{-9}\|\mathbf P\|$) $s = \theta_d/\rho \to 1/Z$ (series limit).</p>
+<div class="eq-block">
+<p>With $D' = d\theta_d/d\theta = 1 + \sum_i (2i+1) k_i \theta^{2i}$, $d\theta/d\rho = Z/\|\mathbf P\|^2$ and
+$d\theta/dZ = -\rho/\|\mathbf P\|^2$:</p>
+$$\frac{\partial s}{\partial \rho} = \frac{D'\, Z/\|\mathbf P\|^2 - s}{\rho}, \qquad
+\frac{\partial s}{\partial Z} = -\frac{D'}{\|\mathbf P\|^2}$$
+$$\frac{\partial u}{\partial X} = f_x\left(s + \frac{X^2}{\rho}\frac{\partial s}{\partial\rho}\right), \quad
+\frac{\partial u}{\partial Y} = f_x \frac{XY}{\rho}\frac{\partial s}{\partial\rho}, \quad
+\frac{\partial u}{\partial Z} = f_x X \frac{\partial s}{\partial Z}$$
+$$\frac{\partial u}{\partial k_i} = f_x \frac{X}{\rho}\, \theta^{2i+1}, \qquad
+\frac{\partial u}{\partial f_x} = s X, \qquad \frac{\partial u}{\partial c_x} = 1 \quad (\text{same for } v)$$
+</div>
+
+<p><strong>Unprojection with the fold bracket.</strong></p>
+<div class="eq-block">
+<p>$r_d = \sqrt{m_x^2 + m_y^2}$ with $m = ((u-c_x)/f_x,\ (v-c_y)/f_y)$. Solve $\theta_d(\theta) = r_d$ by Newton
+from $\theta_0 = \min(r_d, \theta_{fold}/2)$, safeguarded by bisection on $[0, \theta_{fold})$, so the root never lands
+on a folded (aliasing) branch; no convergence inside the bracket (e.g. $r_d &gt; \theta_d(\theta_{fold})$) means no ray.
+Then $\mathbf r = [\sin\theta\, m_x/r_d,\; \sin\theta\, m_y/r_d,\; \cos\theta]^\top$.</p>
+</div>
+
+<!-- ================================================================ -->
+<h2>3. FOV Model (Devernay &amp; Faugeras)</h2>
+
+<p><strong>Paper:</strong> F. Devernay &amp; O. Faugeras, "Straight lines have to be straight," <em>Machine Vision and Applications</em>, 2001.<br>
+<strong>Used by:</strong> LSD-SLAM, DSO, Kalibr<br>
+<strong>FOV:</strong> Up to ~180&deg;</p>
+
+<h3>Forward Projection</h3>
+<div class="eq-block">
+$$r_u = \sqrt{x^2 + y^2}$$
+$$r_d = \frac{1}{\omega} \arctan\!\left(2\, r_u \tan\frac{\omega}{2}\right)$$
+$$x_d = \frac{r_d}{r_u}\, x, \quad y_d = \frac{r_d}{r_u}\, y$$
+$$u = f_x\, x_d + c_x, \quad v = f_y\, y_d + c_y$$
+<p>When $\omega \to 0$, $r_d / r_u \to 1$ (reduces to pinhole).</p>
+</div>
+
+<h3>Parameters (5)</h3>
+<table>
+<tr><th>Parameter</th><th>Meaning</th></tr>
+<tr><td>$f_x, f_y, c_x, c_y$</td><td>Intrinsics</td></tr>
+<tr><td>$\omega$</td><td>FOV parameter (radians). Single distortion parameter.</td></tr>
+</table>
+
+<h3>Unprojection (Closed-form)</h3>
+<div class="eq-block">
+$$r_d = \sqrt{x_d^2 + y_d^2}$$
+$$r_u = \frac{\tan(r_d \cdot \omega)}{2\,\tan(\omega/2)}$$
+$$x = \frac{r_u}{r_d}\, x_d, \quad y = \frac{r_u}{r_d}\, y_d$$
+</div>
+<div class="note"><strong>Advantage:</strong> Closed-form unprojection &mdash; no iteration needed. Simplest model with only 1 distortion parameter.</div>
+
+<!-- ================================================================ -->
+<h2>4. Double Sphere (DS)</h2>
+
+<p><strong>Paper:</strong> V. Usenko, N. Demmel, D. Cremers, "The Double Sphere Camera Model," <em>3DV</em>, 2018.<br>
+<strong>Used by:</strong> Basalt (default), Granite<br>
+<strong>FOV:</strong> Up to ~195&deg;</p>
+
+<h3>Forward Projection</h3>
+<div class="eq-block">
+$$d_1 = \sqrt{X^2 + Y^2 + Z^2}$$
+$$d_2 = \sqrt{X^2 + Y^2 + (\xi\, d_1 + Z)^2}$$
+$$w = \alpha\, d_2 + (1 - \alpha)(\xi\, d_1 + Z)$$
+$$u = f_x \frac{X}{w} + c_x, \quad v = f_y \frac{Y}{w} + c_y$$
+</div>
+
+<h3>Parameters (6)</h3>
+<table>
+<tr><th>Parameter</th><th>Meaning</th><th>Range</th></tr>
+<tr><td>$f_x, f_y, c_x, c_y$</td><td>Intrinsics</td><td>&mdash;</td></tr>
+<tr><td>$\xi$</td><td>First sphere parameter</td><td>$[-1, 1]$</td></tr>
+<tr><td>$\alpha$</td><td>Second sphere parameter</td><td>$[0, 1]$</td></tr>
+</table>
+
+<h3>Unprojection (Closed-form)</h3>
+<div class="eq-block">
+$$m_x = \frac{u - c_x}{f_x}, \quad m_y = \frac{v - c_y}{f_y}, \quad r^2 = m_x^2 + m_y^2$$
+$$m_z = \frac{1 - \alpha^2 r^2}{\alpha\sqrt{1 - (2\alpha - 1)r^2} + 1 - \alpha}$$
+<p>Valid when $1 - (2\alpha - 1)r^2 > 0$.</p>
+$$\lambda = \frac{m_z\,\xi + \sqrt{m_z^2 + (1-\xi^2)r^2}}{m_z^2 + r^2}$$
+$$\mathbf{r} = \begin{bmatrix} \lambda\, m_x \\ \lambda\, m_y \\ \lambda\, m_z - \xi \end{bmatrix}$$
+</div>
+<div class="note"><strong>Key advantage:</strong> Both projection AND unprojection are closed-form. No iteration anywhere. Fastest Jacobians. Recommended for real-time SLAM by Basalt.</div>
+
+<h3>Jacobian $\frac{\partial(u,v)}{\partial(X,Y,Z)}$</h3>
+<div class="eq-block">
+<p>Let $w = \alpha d_2 + (1-\alpha)(\xi d_1 + Z)$:</p>
+$$\frac{\partial d_1}{\partial X} = \frac{X}{d_1}, \quad \frac{\partial d_2}{\partial X} = \frac{X(1 + \xi(\xi d_1 + Z)/d_1)}{d_2}$$
+$$\frac{\partial w}{\partial X} = \alpha\frac{\partial d_2}{\partial X} + (1-\alpha)\frac{\xi X}{d_1}$$
+$$\frac{\partial u}{\partial X} = f_x \frac{w - X\frac{\partial w}{\partial X}}{w^2}$$
+<p>(analogous for $\partial u/\partial Y$, $\partial u/\partial Z$, and $v$ derivatives)</p>
+</div>
+
+<!-- ================================================================ -->
+<h2>5. Extended Unified Camera Model (EUCM)</h2>
+
+<p><strong>Paper:</strong> B. Khomutenko, G. Garcia, P. Music, "An Enhanced Unified Camera Model," <em>IEEE RA-L</em>, 2016.<br>
+<strong>Used by:</strong> Basalt, Kalibr (via extensions)<br>
+<strong>FOV:</strong> Up to ~195&deg;</p>
+
+<h3>Forward Projection</h3>
+<div class="eq-block">
+$$d = \sqrt{\beta(X^2 + Y^2) + Z^2}$$
+$$w = \alpha\, d + (1 - \alpha) Z$$
+$$u = f_x \frac{X}{w} + c_x, \quad v = f_y \frac{Y}{w} + c_y$$
+</div>
+
+<h3>Parameters (6)</h3>
+<table>
+<tr><th>Parameter</th><th>Meaning</th></tr>
+<tr><td>$f_x, f_y, c_x, c_y$</td><td>Intrinsics</td></tr>
+<tr><td>$\alpha$</td><td>Blend parameter ($0$=pinhole, $1$=omnidirectional)</td></tr>
+<tr><td>$\beta$</td><td>Sphere shape ($1$=sphere, $\neq 1$=ellipsoid)</td></tr>
+</table>
+
+<h3>Unprojection (Closed-form)</h3>
+<div class="eq-block">
+$$m_x = \frac{u - c_x}{f_x}, \quad m_y = \frac{v - c_y}{f_y}, \quad r^2 = m_x^2 + m_y^2, \quad \rho^2 = \beta\, r^2$$
+$$m_z = \frac{1 - \alpha^2 \rho^2}{\alpha\sqrt{1 - (2\alpha-1)\rho^2} + 1 - \alpha}$$
+$$\lambda = \frac{m_z\,\alpha + \sqrt{m_z^2 + (1-\alpha^2)\rho^2}}{m_z^2 + \rho^2}$$
+$$\mathbf{r} = \begin{bmatrix}\lambda\, m_x \\ \lambda\, m_y \\ \lambda\, m_z - \alpha\end{bmatrix}$$
+</div>
+<div class="note">When $\beta=1$, EUCM reduces to the Unified Camera Model (UCM/Mei) with $\xi = \alpha/(1-\alpha)$.</div>
+
+<h3>UCM in MVIS (<code>distortion_model: ucm</code>)</h3>
+<p>MVIS stores the UCM in the $\alpha$ form, as Basalt <code>ucm</code> does: cal_vec
+<code>[fx, fy, cx, cy, alpha]</code>, projection as above with $\beta = 1$
+(so <code>ucm</code> $\equiv$ <code>eucm</code>($\beta=1$) $\equiv$ <code>double_sphere</code>($\xi=0$)).
+It is a separate model with 5 parameters, not EUCM with $\beta$ pinned.</p>
+<div class="eq-block">
+$$\xi = \frac{\alpha}{1-\alpha}, \qquad \gamma_{u,v} = \frac{f_{x,y}}{1-\alpha} \qquad (\text{Kalibr } \texttt{omni-none}: [\xi, \gamma_u, \gamma_v, c_x, c_y])$$
+</div>
+<ul>
+<li><strong>Validity (Basalt):</strong> a point projects iff $Z > -w\,d$ with $w = (1-\alpha)/\alpha$ for $\alpha &gt; 0.5$,
+else $\alpha/(1-\alpha)$; at $\alpha = 0.64$ the fold is at ~124&deg; incidence. A pixel unprojects iff
+$\alpha \le 0.5$ or $r^2 &lt; 1/(2\alpha-1)$.</li>
+<li><strong>Range:</strong> $\alpha \in [0, 1)$ ($\alpha = 1$ is $\xi = \infty$). A result outside it is flagged, and no
+Kalibr camchain is written for it (the MVIS yaml still is).</li>
+<li><strong>Kalibr:</strong> an <code>omni</code> + <code>none</code> camchain imports as <code>ucm</code>; <code>ucm</code> exports
+as <code>omni</code> + <code>none</code>. The Kalibr RS tool has no omni-none, so <code>ucm</code> is global-shutter only there.</li>
+<li><strong>Aliases:</strong> <code>unified</code>, <code>omni_none</code>, <code>omni-none</code>. Bare <code>omni</code> / <code>mei</code> stay <code>omni_radtan</code>.</li>
+</ul>
+
+<!-- ================================================================ -->
+<h2>6. Unified Camera Model / Omni (Mei)</h2>
+
+<p><strong>Paper:</strong> C. Mei &amp; P. Rives, "Single View Point Omnidirectional Camera Calibration from Planar Grids," <em>ICRA</em>, 2007.<br>
+<strong>Foundation:</strong> C. Geyer &amp; K. Daniilidis, "A Unifying Theory for Central Catadioptric Systems," <em>ECCV</em>, 2000.<br>
+<strong>Used by:</strong> Kalibr (<code>omni</code>), OKVIS, MVIS (<code>distortion_model: omni_radtan</code>, coeffs <code>[xi, k1, k2, p1, p2]</code>; legacy 4-coeff files load with $p_2=0$)<br>
+<strong>FOV:</strong> Up to ~360&deg; (catadioptric)</p>
+<p><strong>p2 (Kalibr parity).</strong> MVIS estimates the full Kalibr omni-radtan set: cal_vec
+<code>[fx, fy, cx, cy, xi, k1, k2, p1, p2]</code> (9 parameters; $J_{cal}$ is $2\times 9$). $p_2$ is always free, with the
+existing camera-only schedule (phase 1: $\xi$ under a loose prior, $k_1, k_2, p_1, p_2$ pinned; phase 2: $\xi$
+frozen, $k_1, k_2, p_1, p_2$ free). Kalibr camchains import and export the real $p_2$; legacy 4-coeff MVIS / Kalibr
+files and 8-long cal_vecs load with $p_2 = 0$.</p>
+
+<h3>Forward Projection</h3>
+<div class="eq-block">
+<p><strong>Step 1 &mdash; Sphere + shifted projection:</strong></p>
+$$d = \|\mathbf{P}\| = \sqrt{X^2 + Y^2 + Z^2}$$
+$$x_s = \frac{X}{Z + \xi\, d}, \quad y_s = \frac{Y}{Z + \xi\, d}$$
+
+<p><strong>Step 2 &mdash; Optional radial-tangential distortion:</strong></p>
+$$r^2 = x_s^2 + y_s^2$$
+$$x_d = x_s(1 + k_1 r^2 + k_2 r^4) + 2p_1 x_s y_s + p_2(r^2 + 2x_s^2)$$
+$$y_d = y_s(1 + k_1 r^2 + k_2 r^4) + p_1(r^2 + 2y_s^2) + 2p_2 x_s y_s$$
+
+<p><strong>Step 3 &mdash; Pixel:</strong></p>
+$$u = f_x\, x_d + c_x, \quad v = f_y\, y_d + c_y$$
+</div>
+
+<h3>Parameters (9)</h3>
+<table>
+<tr><th>Parameter</th><th>Meaning</th></tr>
+<tr><td>$f_x, f_y, c_x, c_y$</td><td>Intrinsics</td></tr>
+<tr><td>$\xi$</td><td>Mirror/unification param ($\xi=0$: pinhole, $\xi=1$: parabolic)</td></tr>
+<tr><td>$k_1, k_2, p_1, p_2$</td><td>Distortion (applied after sphere projection)</td></tr>
+</table>
+
+<h3>Unprojection (Closed-form for UCM part)</h3>
+<div class="eq-block">
+<p>After removing distortion (iterative if $k_1,k_2,p_1,p_2$ present):</p>
+$$r^2 = x_s^2 + y_s^2$$
+$$\lambda = \frac{\xi + \sqrt{1 + (1-\xi^2)r^2}}{1 + r^2}$$
+$$\mathbf{r} = \begin{bmatrix} \lambda\, x_s \\ \lambda\, y_s \\ \lambda - \xi \end{bmatrix}$$
+</div>
+
+<!-- ================================================================ -->
+<h2>7. Special Sensor Types</h2>
+
+<h3>Event Cameras (DVS/DAVIS)</h3>
+<p><strong>Same projection models as frame cameras.</strong> Event cameras use identical silicon pixel arrays
+and optics. The difference is temporal (asynchronous per-pixel brightness change), not spatial.
+Calibration uses blinking patterns or coexisting grayscale frames (DAVIS).</p>
+<p><em>Ref: Mueggler et al., "Continuous-Time Visual-Inertial Odometry for Event Cameras," IEEE T-RO, 2018.</em></p>
+
+<h3>Thermal / IR Cameras (FLIR, LWIR)</h3>
+<p><strong>Same projection models.</strong> Germanium/chalcogenide lenses follow the same geometric optics.
+Special considerations: thermal drift of focal length, narcissus effect on principal point,
+and need for thermal-contrast calibration targets (heated checkerboard, metal plates with holes).</p>
+<p><em>Ref: Vidas et al., "A Mask-Based Approach for Geometric Calibration of Thermal-Infrared Cameras," IEEE T-IM, 2012.</em></p>
+
+<h3>Underwater Cameras</h3>
+<p><strong>Refractive model needed for flat ports.</strong> Snell&rsquo;s law at water-glass-air interfaces
+creates a non-single-viewpoint camera. Dome ports centered on the entrance pupil preserve SVP.</p>
+<div class="eq-block">
+<p>Flat port refraction (Snell&rsquo;s law):</p>
+$$n_\text{water}\sin\theta_\text{water} = n_\text{air}\sin\theta_\text{air}$$
+<p>where $n_\text{water} \approx 1.33$. For narrow FOV, absorbed into modified intrinsics.</p>
+</div>
+<p><em>Ref: Treibitz et al., "Flat Refractive Geometry," IEEE TPAMI, 2012.</em></p>
+
+<h3>Microscope Cameras (Telecentric)</h3>
+<div class="eq-block">
+<p><strong>Orthographic projection</strong> (no perspective foreshortening):</p>
+$$u = m_x X + c_x, \quad v = m_y Y + c_y$$
+<p>No division by $Z$ &mdash; objects at different depths have the same apparent size.</p>
+</div>
+
+<!-- ================================================================ -->
+<h2>8. Model Selection Guide</h2>
+
+<p>Choose by the largest incidence angle &theta; of the board corners on the camera (off the optical axis), not by the
+lens's advertised field of view. After a solve, check <code>corner_accounting</code> and <code>valid_domain</code> in the
+result: they report the largest &theta; used and any corners past the model's domain.</p>
+
+<table>
+<tr><th>Largest corner &theta;</th><th>Model</th><th>Notes</th></tr>
+<tr><td>under ~50&deg; (standard lens)</td><td>Pinhole + RadTan</td><td>FOV is an alternative</td></tr>
+<tr><td>50&ndash;90&deg; (wide or fisheye)</td><td><code>kb4</code></td><td><code>equidistant</code> gives the same pixels here; name it explicitly if you need it.
+EUCM, DS and FOV are alternatives with a different shape</td></tr>
+<tr><td>past 90&deg;, up to the fold</td><td><code>kb4</code></td><td><code>equidistant</code> cannot project these corners. The Kalibr export is pinhole-equi and drops rays past 90&deg; (MVIS warns)</td></tr>
+<tr><td>past the kb4 fold, or catadioptric</td><td>UCM, EUCM, DS or <code>omni_radtan</code></td><td><code>omni_radtan</code> is for expert use; single-camera &xi; is weakly pinned below ~80&deg;</td></tr>
+<tr><td>event or thermal camera</td><td>as for a frame camera with the same &theta;</td><td>&mdash;</td></tr>
+</table>
+
+<div class="note">
+<strong>Measured on TUM-VI and T265</strong> (no corner past 90&deg;): kb4 and equidistant fits agree to 1e-6 px, and their
+cam-IMU extrinsics to 1e-11 rad. Against EUCM the KB models differ on T265 by up to 1.7e-3 rad and 1.6 mm in cam-IMU
+rotation and lever arm; about half of that comes from board-shape estimation. DS has closed-form projection and
+unprojection, which some real-time systems (Basalt) use.
+</div>
+
+<!-- ================================================================ -->
+<h2>9. References</h2>
+<ol>
+<li>Brown, D.C. "Decentering Distortion of Lenses," <em>Photogrammetric Engineering</em>, 1966.</li>
+<li>Kannala, J. &amp; Brandt, S. "A Generic Camera Model for Fisheye Lenses," <em>IEEE TPAMI</em>, 2006.</li>
+<li>Devernay, F. &amp; Faugeras, O. "Straight lines have to be straight," <em>MVA</em>, 2001.</li>
+<li>Usenko, V. et al. "The Double Sphere Camera Model," <em>3DV</em>, 2018.</li>
+<li>Khomutenko, B. et al. "An Enhanced Unified Camera Model," <em>IEEE RA-L</em>, 2016.</li>
+<li>Mei, C. &amp; Rives, P. "Single View Point Omnidirectional Camera Calibration," <em>ICRA</em>, 2007.</li>
+<li>Geyer, C. &amp; Daniilidis, K. "A Unifying Theory for Central Catadioptric Systems," <em>ECCV</em>, 2000.</li>
+<li>Scaramuzza, D. et al. "A Toolbox for Easily Calibrating Omnidirectional Cameras," <em>IROS</em>, 2006.</li>
+<li>Grossberg, M.D. &amp; Nayar, S.K. "A General Imaging Model," <em>ICCV</em>, 2001.</li>
+<li>Hartley, R. &amp; Zisserman, A. <em>Multiple View Geometry</em>, Cambridge, 2003.</li>
+</ol>
+
+<p style="color: #888; font-size: 12px; margin-top: 40px;">
+Generated for MVIS project. Equations rendered with MathJax. Last updated: 2026-04-19.
+</p>
+
+</body>
+</html>

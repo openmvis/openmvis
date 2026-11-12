@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Cam-IMU calibration driven by the unified `estimate:` block (unified-estimate).
+#
+# `estimate:` is the canonical, symmetric way to choose WHAT gets calibrated. It is
+# the source of truth: each key written here is pushed down into the low-level solve
+# knobs (free_intrinsics / estimate_readout / imu_intrinsics / imu_intrinsics_model /
+# the spatial-temporal pins), and WINS over any conflicting legacy key (with a warning).
+# Omit `estimate:` entirely and the legacy fields below behave exactly as before.
+#
+# Run with:  mvis cam-imu -c examples/configs/example_estimate.yaml
+
+mode: cam-imu
+input:
+  format: euroc
+  path: /path/to/dataset/mav0
+  # NOTE: the BASE camera (cam0 / first cam_topic) defines the trajectory clock —
+  # make it the cleanest sensor (global shutter, highest rate, lowest latency).
+  # See doc/cam_imu_base_camera.md.
+  imu_topics: ["/imu0"]
+  window_mode: manual    # keep the explicit t0/window below (was the pre-motion default)
+  t0: 3.0
+  window: 45.0
+
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.03
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+camera_input:
+  path: examples/configs/example_estimate_camchain.yaml
+
+solve:
+  state_hz: 8.0
+  max_iterations: 40
+
+# --- the unified switchboard ------------------------------------------------
+# Tri-state: a key you omit inherits the pipeline default (shown in [brackets]).
+estimate:
+  camera:                 # rig-wide camera defaults (per-camera override below)
+    intrinsics: false     # [pinned] pin to the prior camchain (true = refine)
+    tr:         false     # [false]  rolling-shutter readout (true on RS cams)
+    td:         true      # [true]   camera <-> base-IMU time offset
+    extrinsics: true      # [true]   cam-IMU extrinsic T_C->I
+  imu:
+    intrinsics: dw_da     # [dw_da]  bool (true=full/false=pinned) OR a staging
+                          #          string: pinned | dw_da | dw_da_r | full
+    model:      calyx     # [calyx]  IMU model family: kalibr | rpng | calyx
+    extrinsics: true      # [true]   aux-IMU -> base-IMU extrinsic (multi-IMU)
+    td:         true      # [true]   aux-IMU <-> base-IMU time offset (multi-IMU)
+
+output:
+  path: /tmp/example_estimate.json

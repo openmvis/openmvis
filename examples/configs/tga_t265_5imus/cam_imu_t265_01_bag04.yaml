@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# t265-unit-01 cam-IMU calibration with gyro<->accel time offset.
+# Rig: vi_sensor_rigs_5imus — this rig carries TWO t265 units (t265_01, t265_03),
+# each with its own fisheye stereo + BMI055 IMU. Calibrated per unit: this config
+# uses the t265_01 stereo pair + /t265_01/imu as base. Studies per-unit t_ga.
+mode: cam-imu
+input:
+  format: ros1
+  path: ${MVIS_DATASETS}/vi_sensor_rigs_5imus/5imus_4cams_04.bag
+  cam_topics:
+    - /t265_01/fisheye1/image_raw     # T265-01-L (global)  <- base
+    - /t265_01/fisheye2/image_raw     # T265-01-R (global)
+  imu_topics:
+    - /t265_01/imu                    # BMI055 of unit 01 (base; the sensor under test)
+  window_mode: motion
+  segment_length: 80.0
+  cache_dir: /tmp/mvis_detcache
+
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+camera_input:
+  path: examples/configs/tga_t265_5imus/t265_01_calib.yaml
+
+solve:
+  max_iterations: 40
+  estimate_t_ga: true
+  sigma_t_ga: 0.010
+
+estimate:
+  camera:
+    intrinsics: false
+    tr: false
+    td: true
+    extrinsics: true
+  imu:
+    intrinsics: dw_da
+    model: calyx
+
+output:
+  path: results/tga_t265_5imus/unit01_bag04/cam_imu.json

@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Camera prior for the configs next to it: the median of eight `mvis cam` solves on the
+# TUM-VI raw calib-cam1..cam8 recordings (at c5864ab), shipped so these examples run as they are.
+source: 'median of 8 camera-only solves: cam1, cam2, cam3, cam4, cam5, cam6, cam7,
+  cam8'
+cameras:
+- id: 0
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 381.89136541641926
+    fy: 381.8080974322461
+    cx: 509.84092114124815
+    cy: 513.799090774804
+  distortion:
+    model: equidistant
+    coeffs:
+    - 0.005472932544857839
+    - -0.002467673658959708
+    - 4.2746900111600266e-05
+    - -0.00022756669960947401
+  image_size:
+  - 1024
+  - 1024
+  rolling_shutter_readout: 0.0
+- id: 1
+  model: pinhole_equidistant
+  intrinsics:
+    fx: 380.61023047587287
+    fy: 380.5035566376936
+    cx: 505.0805941186228
+    cy: 509.66068834006353
+  distortion:
+    model: equidistant
+    coeffs:
+    - 0.0064680951133460115
+    - -0.0026149800337748243
+    - -0.00022404098463688917
+    - -0.00014121780081027282
+  image_size:
+  - 1024
+  - 1024
+  rolling_shutter_readout: 0.0
+extrinsics:
+  reference_camera: 0
+  transforms:
+  - from: 1
+    to: 0
+    T_to_from:
+    - - 0.9999995409479292
+      - 0.000773574060107543
+      - 0.0005654087930674068
+      - 0.10101901137048469
+    - - -0.0007993767581051595
+      - 0.9988871516775962
+      - 0.04715738765260505
+      - 0.0013861454399770358
+    - - -0.0005282998470102496
+      - -0.047157817979556704
+      - 0.9988873115135053
+      - 0.0010053559270498784
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+    so3:
+    - -0.047175106046866234
+    - 0.0005470572929805814
+    - -0.000786767320903613
+    translation:
+    - 0.10101901137048469
+    - 0.0013861454399770358
+    - 0.0010053559270498784
+time_offsets:
+  reference_camera: 0
+  offsets: []

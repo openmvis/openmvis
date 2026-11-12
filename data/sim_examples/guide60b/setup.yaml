@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: CC-BY-NC-4.0
+# Simulator example guide60b: Calibration motion guide60b (chessboard, 60 s). Written by the maintainers' example export; see README.md.
+# Frames: W world (gravity along -z), I base IMU (trajectory.txt), C camera, B board.
+# Times in s, lengths in m, angles in rad. T_CtoI maps camera to IMU coordinates.
+name: guide60b
+duration_s: 60.0
+world:
+  g_inW: [0.0, 0.0, -9.81]
+cameras:
+- name: cam0
+  label: Looper Insight-9 left camera
+  model: equidistant
+  intrinsics: [333.3548794166157, 328.3674463409333, 270.4873301795159, 319.7121595594763, -0.022781496775498504, 0.017219349727097707, -0.023474504938758814, 0.008925135631937307]
+  image_size: [544, 640]
+  rate_hz: 20.0
+  shutter: global
+  readout_s: 0.0
+  rolling_mode: 0
+  T_CtoI:
+  - [-0.005873355156267487, 0.9999655875670777, -0.005858958436407094, -0.011768356479178718]
+  - [-0.9999823868917675, -0.005868247671066957, 0.0008885429158766635, 0.039889122200298506]
+  - [0.0008541305589505853, 0.005864073986526688, 0.9999824413602878, 0.016556299353262003]
+  - [0.0, 0.0, 0.0, 1.0]
+  td_s: 0.0037481558853416624
+  corner_sigma_px: 0.5
+imu:
+  name: imu0
+  label: Looper Insight-9 IMU
+  rate_hz: 400.0
+  model: calyx
+  intrinsics_xi24: [0.004, 0.0, 0.0, 0.0, -0.003, 0.0, 0.0, 0.0, 0.005, -0.004, 0.0, 0.005, 0.0, 0.0, 0.003, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001]
+  noise:
+    sigma_w: 0.000197921
+    sigma_a: 0.00150025
+    sigma_bg: 4.25541e-06
+    sigma_ba: 5.29772e-05
+  t_ga_s: 0.0017792653495397194
+  b_g: [0.008820261729838321, 0.0020007860418361167, 0.004893689920528696]
+  b_a: [0.1120446599600729, 0.09337789950749838, -0.04886389399382055]
+board:
+  board_type: chessboard
+  rows: 6
+  cols: 9
+  square_size: 0.04347
+  T_BinW:
+  - [1.0, 0.0, 0.0, 0.0]
+  - [0.0, 0.0, 1.0, 0.0]
+  - [0.0, -1.0, 0.0, 0.0]
+  - [0.0, 0.0, 0.0, 1.0]
+exposure_s: 0.002
+truth:
+  perturbation:
+    seed: 3
+    name: guide60b
+    rng_seed: 13202730700
+    focal_rel: 0.01
+    center_px: 4.0
+    dist_rel: 0.05
+    rot_rad: 0.01
+    lever_m: 0.005
+    td_s: 0.001
+    t_ga_s: 0.0005

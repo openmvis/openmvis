@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Camera prior for the configs next to it: a Kalibr-format camchain of the TUM-VI MIC
+# recordings (at c5864ab), shipped so this example runs as it is.
+cam0:
+  rostopic: /cam0/image_raw
+  camera_model: pinhole
+  distortion_model: equidistant
+  distortion_coeffs:
+  - 0.19208
+  - 0.03504
+  - -0.22802
+  - 0.09404
+  intrinsics:
+  - 424.22456
+  - 424.33108
+  - 467.83803
+  - 479.69211
+  resolution:
+  - 960
+  - 960
+cam1:
+  rostopic: /cam1/image_raw
+  camera_model: pinhole
+  distortion_model: equidistant
+  distortion_coeffs:
+  - 0.19789
+  - 0.01029
+  - -0.19141
+  - 0.07695
+  intrinsics:
+  - 424.99485
+  - 425.27593
+  - 467.77973
+  - 484.79976
+  resolution:
+  - 960
+  - 960

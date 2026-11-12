@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Cam-IMU calibration: vi_sensor_rigs_5imus bag 01 — 4 cameras (two T265 rigs) + ALL
+# 5 IMUs. Prior intrinsics come from per-camera cam-only (vi_5imus_4cams_calib.yaml;
+# the two T265 rigs don't co-observe the board, so cameras are linked via the IMU
+# trajectory, not co-visibility). Run: mvis cam-imu -c <this>
+mode: cam-imu
+input:
+  format: ros1
+  path: ${MVIS_DATASETS}/vi_sensor_rigs_5imus/5imus_4cams_01.bag
+  cam_topics:
+    # BASE camera (cam0): a global-shutter T265 fisheye, ~0 lag -> accurate clock.
+    - /t265_01/fisheye1/image_raw                   # T265-01-L (global) <- BASE
+    - /t265_01/fisheye2/image_raw                   # T265-01-R (global)
+    - /t265_03/fisheye1/image_raw                   # T265-03-L (global)
+    - /t265_03/fisheye2/image_raw                   # T265-03-R (global)
+  imu_topics:
+    - /mti/sensor/imu_raw  # base IMU (Xsens MTi, ~400 Hz)
+    - /gx3_25/data         # aux 1 (microstrain gx3-25)
+    - /gx3_35/imu/data     # aux 2 (microstrain gx3-35)
+    - /t265_01/imu         # aux 3 (T265-01)
+    - /t265_03/imu         # aux 4 (T265-03)
+  window_mode: motion       # auto-pick the most-exciting 80 s
+  segment_length: 80.0
+  cache_dir: /tmp/mvis_detcache
+
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+
+camera_input:
+  path: examples/configs/tga_mvis/vi_5imus_4cams_calib.yaml
+  # per-camera (order = cam_topics): base tracks state_hz (dense), aux cameras 8 Hz.
+  # All four are global-shutter T265 fisheyes -> no rolling-shutter readout.
+  cameras:
+    - {estimate_readout: false}                 # T265-01-L (base): vision @ state_hz
+    - {estimate_readout: false, factor_hz: 8.0} # T265-01-R
+    - {estimate_readout: false, factor_hz: 8.0} # T265-03-L
+    - {estimate_readout: false, factor_hz: 8.0} # T265-03-R
+
+solve:
+  estimate_t_ga: true
+  sigma_t_ga: 0.010
+  max_iterations: 40
+
+estimate:
+  camera:
+    intrinsics: false      # pin to the per-camera cam-only prior
+    td: true
+    extrinsics: true       # T_C->I per camera (links the two rigs via the IMU)
+  imu:
+    intrinsics: dw_da
+    model: calyx
+    extrinsics: true       # aux -> base T_IstoI for all 4 aux IMUs
+    td: true               # inter-IMU td for all 4 aux IMUs
+
+output:
+  path: results/tga_mvis/mti_raw_01/cam_imu.json

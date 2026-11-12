@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+blank_issues_enabled: true
+contact_links:
+  - name: Commercial licensing
+    url: mailto:licensing@openmvis.com
+    about: For use of MVIS in closed-source products.

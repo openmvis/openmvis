@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use MVIS, please cite the software and the MVIS paper."
+title: "MVIS: camera and camera-IMU calibration toolbox"
+type: software
+authors:
+  - family-names: Yang
+    given-names: Yulin
+    email: contact@openmvis.com
+version: 0.1.0
+license: GPL-3.0-only
+url: "https://openmvis.com"
+repository-code: "https://github.com/openmvis/openmvis"
+keywords: [calibration, camera-imu, visual-inertial, gtsam, factor-graph]
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Yang
+      given-names: Yulin
+    - family-names: Geneva
+      given-names: Patrick
+    - family-names: Huang
+      given-names: Guoquan
+  title: "Multi-visual-inertial system: Analysis, calibration, and estimation"
+  journal: "The International Journal of Robotics Research"
+  year: 2024
+  volume: 43
+  issue: 13
+  start: 1995
+  end: 2026
+  doi: "10.1177/02783649241245726"

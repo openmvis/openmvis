@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: CC-BY-NC-4.0
+# Simulator example guide06c_60: Calibration motion guide06c_60 (AprilGrid, 60 s). Written by the maintainers' example export; see README.md.
+# Frames: W world (gravity along -z), I base IMU (trajectory.txt), C camera, B board.
+# Times in s, lengths in m, angles in rad. T_CtoI maps camera to IMU coordinates.
+name: guide06c_60
+duration_s: 60.0
+world:
+  g_inW: [0.0, 0.0, -9.81]
+cameras:
+- name: cam0
+  label: Looper Insight-9 left camera
+  model: equidistant
+  intrinsics: [328.05248837829555, 329.2441050693756, 267.4101317496483, 320.04709399843296, -0.022581777802859544, 0.018051301309336094, -0.02537319927272758, 0.009465296334602885]
+  image_size: [544, 640]
+  rate_hz: 20.0
+  shutter: global
+  readout_s: 0.0
+  rolling_mode: 0
+  T_CtoI:
+  - [-0.011919479949341583, 0.9999262461347871, -0.002329871595744045, -0.01130362084085225]
+  - [-0.9999232882270145, -0.01192722811767181, -0.003340482555436696, 0.04147485659386342]
+  - [-0.003368025052817295, 0.002289876069057989, 0.9999917063688302, 0.01586571729867314]
+  - [0.0, 0.0, 0.0, 1.0]
+  td_s: 0.0038467753226805873
+  corner_sigma_px: 0.5
+imu:
+  name: imu0
+  label: Looper Insight-9 IMU
+  rate_hz: 400.0
+  model: calyx
+  intrinsics_xi24: [0.004, 0.0, 0.0, 0.0, -0.003, 0.0, 0.0, 0.0, 0.005, -0.004, 0.0, 0.005, 0.0, 0.0, 0.003, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001]
+  noise:
+    sigma_w: 0.000197921
+    sigma_a: 0.00150025
+    sigma_bg: 4.25541e-06
+    sigma_ba: 5.29772e-05
+  t_ga_s: 0.0011079213204416138
+  b_g: [0.008820261729838321, 0.0020007860418361167, 0.004893689920528696]
+  b_a: [0.1120446599600729, 0.09337789950749838, -0.04886389399382055]
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.04347
+  tag_spacing: 0.3
+  tag_family: t36h11
+  T_BinW:
+  - [1.0, 0.0, 0.0, 0.0]
+  - [0.0, 0.0, 1.0, 0.0]
+  - [0.0, -1.0, 0.0, 0.0]
+  - [0.0, 0.0, 0.0, 1.0]
+exposure_s: 0.002
+truth:
+  perturbation:
+    seed: 3
+    name: guide06c_60
+    rng_seed: 15909674053
+    focal_rel: 0.01
+    center_px: 4.0
+    dist_rel: 0.05
+    rot_rad: 0.01
+    lever_m: 0.005
+    td_s: 0.001
+    t_ga_s: 0.0005

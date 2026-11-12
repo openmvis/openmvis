@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pymvis"
+dynamic = ["version"]
+description = "Camera and camera-IMU calibration toolbox — multi-camera, multi-IMU, on-manifold SO(3)/SE(3) optimization"
+readme = "README.md"
+license = "GPL-3.0-only"
+license-files = ["LICENSE", "COMMERCIAL-LICENSE.md"]
+# GTSAM publishes no sdist and only cp311+ wheels (4.2.2: cp311-cp314,
+# manylinux/macOS), so anything below 3.11 cannot resolve `gtsam` at all.
+# <3.13: the required numpy<2 (see dependencies) has no 3.13 wheel; numpy 1.x
+# never got one, so on 3.13 pip would fall back to a numpy source build that
+# fails. Lift together with the numpy ceiling.
+requires-python = ">=3.11,<3.13"
+authors = [{name = "Yulin Yang", email = "contact@openmvis.com"}]
+keywords = [
+    "calibration", "camera-calibration", "camera-imu", "visual-inertial",
+    "extrinsics", "intrinsics", "gtsam", "factor-graph", "slam", "robotics",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    # No Windows: GTSAM ships no Windows wheels.
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = [
+    # GTSAM 4.2 is built against the NumPy 1.x ABI; NumPy 2 segfaults when
+    # constructing gtsam.Pose3(Rot3, ndarray). Keep the ceiling until GTSAM
+    # ships a NumPy-2 build.
+    "numpy>=1.20,<2",
+    # OpenCV 4.12+ wheels require numpy>=2, so with the numpy ceiling pip can
+    # only pick 4.11.x anyway; say so instead of letting the resolver backtrack.
+    "opencv-python>=4.5,<4.12",
+    # <4.3: 4.3.0 (2026) is untested with MVIS; lift after the regression suite
+    # passes on it (Linux + macOS)
+    "gtsam>=4.2,<4.3",
+    "pyyaml>=6.0",
+    "scipy>=1.7",
+    "tqdm>=4.60",
+    # Report generation is a core CLI feature: mvis.analysis.{html_report,
+    # plot_3d,report_shell} import these at module level, and mvis.cli.main
+    # pulls in mvis.analysis unconditionally. They are NOT optional -- with
+    # them in an extra, a plain `pip install pymvis` gives a CLI that dies on
+    # `mvis --help`.
+    "matplotlib>=3.5",
+    "plotly>=5.0",
+]
+
+[project.optional-dependencies]
+apriltag = ["aprilgrid>=0.5"]
+# NOTE: opencv-contrib-python and the base opencv-python dependency both provide
+# `cv2`; pip installs both and the last one wins. Prefer `pip install pymvis[aruco]`
+# in a clean env, or uninstall opencv-python first if cv2 misbehaves.
+aruco = ["opencv-contrib-python>=4.5,<4.12"]   # <4.12: same numpy>=2 rule as opencv-python
+ros1 = ["rosbags>=0.11"]
+# PyAV decodes the H.265 camera streams in the MCAP converter (also used by the
+# PennCOSYVIO converter, which has no extra of its own: `pip install av`).
+mcap = ["mcap>=1.1", "mcap-protobuf-support>=0.5", "av>=10"]
+# matplotlib/plotly moved to the core deps (imported eagerly by the CLI report
+# path); rerun is the genuinely optional viewer, imported lazily.
+viz = ["rerun-sdk>=0.18"]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-timeout>=2.3",
+]
+
+[project.urls]
+Homepage = "https://openmvis.com"
+Repository = "https://github.com/openmvis/openmvis"
+
+[project.scripts]
+mvis = "mvis.cli.main:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "mvis.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"mvis.mvisdb" = ["*.sql"]
+"mvis.simulation" = ["data/*.json", "data/trajectories/*.txt", "data/examples/*/*.txt", "data/examples/*/*.yaml",
+                     "data/examples/*/*.md"]
+"mvis.datasets" = ["dataset_catalog.json"]
+"mvis.analysis.views" = ["assets/*.js", "assets/*.css"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+pythonpath = ["."]
+markers = [
+    "slow: marks tests as slow (e.g. full LM solves); deselect with -m 'not slow'",
+    "integration: end-to-end solves on digital twins (tests/integration)",
+]
