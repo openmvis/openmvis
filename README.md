@@ -11,8 +11,7 @@
 
 **Open-source Multi-Visual-Inertial Sensor calibration.** A Python toolbox for
 **camera** and **camera-IMU** calibration, from a single camera to multi-camera,
-multi-IMU rigs, built on GTSAM factor graphs with native SO(3)/SE(3) Lie group
-support. OpenMVIS is the project, MVIS is the calibration toolbox, and
+multi-IMU rigs. OpenMVIS is the project, MVIS is the calibration toolbox, and
 `pymvis` is its Python package (import and CLI `mvis`).
 
 [openmvis.com](https://openmvis.com) (documentation) ·
