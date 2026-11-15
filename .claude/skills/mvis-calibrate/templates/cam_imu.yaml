@@ -1,0 +1,53 @@
+# Camera-IMU calibration (Stage 4 template). Run after camera-only; replace every <...>.
+# Presets (Stage 4): Full = segment_length 80, non-base factor_hz 10, corner_subsample all
+#                    Fast = segment_length 60, non-base factor_hz 4,  corner_subsample two_anti
+mode: cam-imu
+input:
+  format: ros1                       # ros1 | ros2 | euroc
+  path: <bag file, ROS2 bag folder or mav0 folder>
+  cam_topics: [<base camera topic>, <other camera topics>]
+  imu_topics: [<base IMU topic>, <aux IMU topics>]
+  window_mode: motion                # auto-pick the most exciting segment
+  segment_length: 80.0               # Full 80 | Fast 60
+  cache_dir: <run>/cache
+board:                               # identical to the camera-only config
+  board_type: apriltag
+  rows: <rows>
+  cols: <cols>
+  tag_size: <metres>
+  tag_spacing: <ratio>
+  tag_family: t36h11
+camera_input:
+  path: <run>/05_solve/attempt-NN/cam/calibration.yaml   # camera-only result (the prior)
+  cameras:                           # one entry per cam_topics entry, same order
+    - {}                             # base camera: full rate
+    - factor_hz: 10.0                # non-base cameras: Full 10 | Fast 4
+solve:
+  max_iterations: 40
+  rms_gate_px: 3.0
+  corner_subsample: all              # Full all | Fast two_anti
+  estimate_t_ga: true                # default; the base IMU's gyro-accel offset
+  vision_pose: imu                   # default
+  # IMU noise (continuous-time). Datasheet / Allan variance; defaults are generic.
+  sigma_g: 0.01
+  sigma_bg: 0.001
+  sigma_a: 0.02
+  sigma_ba: 0.002
+estimate:
+  board_points: false                # same choice as the camera-only config
+  camera:
+    intrinsics: true                 # default: refined jointly from the camera-only prior
+    tr: false                        # true only for rolling-shutter cameras
+    td: true
+    extrinsics: true
+  imu:
+    intrinsics: dw_da
+    model: calyx
+    extrinsics: true                 # aux IMUs
+    td: true                         # aux IMUs
+reference:                           # optional nominal values (Stage 3), compared in Stage 6
+  label: CAD                         # or "Device wiki"
+  # lever_mm: {cam0: [x, y, z]}
+  # baseline_mm: <mm>
+output:
+  path: <run>/05_solve/attempt-NN/cam_imu/cam_imu.json

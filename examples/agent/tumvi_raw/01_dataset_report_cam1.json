@@ -1,0 +1,70 @@
+{
+ "path": "<DATA>/dataset-calib-cam1.bag",
+ "format": "ros1",
+ "supported_modes": [
+  "cam",
+  "cam-imu"
+ ],
+ "duration_s": 109.04237024000001,
+ "streams": [
+  {
+   "name": "/cam0/image_raw",
+   "kind": "camera",
+   "count": 436,
+   "rate_hz": 4.0,
+   "start_s": 119.788999929,
+   "end_s": 228.83137016900002,
+   "info": {
+    "width": 1024,
+    "height": 1024,
+    "encoding": "mono16"
+   }
+  },
+  {
+   "name": "/cam1/image_raw",
+   "kind": "camera",
+   "count": 436,
+   "rate_hz": 4.0,
+   "start_s": 119.788999929,
+   "end_s": 228.83137016900002,
+   "info": {
+    "width": 1024,
+    "height": 1024,
+    "encoding": "mono16"
+   }
+  },
+  {
+   "name": "/imu0",
+   "kind": "imu",
+   "count": 21741,
+   "rate_hz": 199.36,
+   "start_s": 119.657689,
+   "end_s": 228.70005924000003,
+   "info": {}
+  },
+  {
+   "name": "/vrpn_client/raw_transform",
+   "kind": "other",
+   "count": 12900,
+   "rate_hz": null,
+   "start_s": null,
+   "end_s": null,
+   "info": {}
+  }
+ ],
+ "findings": [
+  {
+   "id": "imu.stamps_monotonic",
+   "subject": "/imu0",
+   "status": "pass",
+   "message": "stamps strictly increasing"
+  },
+  {
+   "id": "imu.accel_units",
+   "subject": "/imu0",
+   "status": "pass",
+   "message": "|a| median 10.47 m/s^2"
+  }
+ ],
+ "status": "pass"
+}

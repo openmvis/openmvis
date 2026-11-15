@@ -1,0 +1,30 @@
+{
+ "status": "pass",
+ "findings": [
+  {
+   "id": "env.numpy",
+   "subject": "numpy",
+   "status": "pass",
+   "message": "numpy 1.26.4"
+  },
+  {
+   "id": "env.gtsam",
+   "subject": "gtsam",
+   "status": "pass",
+   "message": "gtsam imports"
+  },
+  {
+   "id": "env.mvis_checkout",
+   "subject": "mvis",
+   "status": "pass",
+   "message": "mvis imported from <REPO>"
+  },
+  {
+   "id": "env.git_sha",
+   "subject": "mvis",
+   "status": "pass",
+   "message": "f556f0c"
+  }
+ ]
+}
+

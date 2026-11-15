@@ -1,0 +1,65 @@
+{
+ "status": "pass",
+ "findings": [
+  {
+   "id": "env.python",
+   "subject": "python",
+   "status": "pass",
+   "message": "3.11.6 at <CONDA_ENV>/bin/python"
+  },
+  {
+   "id": "env.numpy",
+   "subject": "numpy",
+   "status": "pass",
+   "message": "numpy 1.26.4"
+  },
+  {
+   "id": "env.gtsam",
+   "subject": "gtsam",
+   "status": "pass",
+   "message": "gtsam imports"
+  },
+  {
+   "id": "env.cv2",
+   "subject": "opencv",
+   "status": "pass",
+   "message": "cv2 4.13.0 from opencv-python 4.13.0.92, opencv-contrib-python 4.13.0.92"
+  },
+  {
+   "id": "env.extra.apriltag",
+   "subject": "aprilgrid",
+   "status": "pass",
+   "message": "aprilgrid 0.5.0"
+  },
+  {
+   "id": "env.extra.ros1",
+   "subject": "rosbags",
+   "status": "pass",
+   "message": "rosbags 0.11.0"
+  },
+  {
+   "id": "env.mvis_checkout",
+   "subject": "mvis",
+   "status": "pass",
+   "message": "mvis imported from <REPO>"
+  },
+  {
+   "id": "env.git_sha",
+   "subject": "mvis",
+   "status": "pass",
+   "message": "96af17d"
+  },
+  {
+   "id": "env.cli",
+   "subject": "mvis",
+   "status": "pass",
+   "message": "<CONDA_ENV>/bin/mvis"
+  },
+  {
+   "id": "env.smoke",
+   "subject": "solver",
+   "status": "pass",
+   "message": "synthetic camera solve: fx 499.1 fy 499.5 (truth 500), RMS 0.40 px, 13.2 s"
+  }
+ ]
+}

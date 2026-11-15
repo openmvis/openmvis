@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Stage 2 — sensor suite (VI-Rig 3-cam, april_01)
+sync: shared host clock (ROS header stamps); Blackfly and T265 are separate devices
+cameras:
+  - {name: Blackfly, topic: /blackfly/image_raw, role: base, lens: pinhole, shutter: global, size: [720, 540], rate_hz: 30}
+  - {name: T265-1, topic: /t265/fisheye1/image_raw, role: aux, lens: fisheye, shutter: global, size: [848, 800], rate_hz: 30}
+  - {name: T265-2, topic: /t265/fisheye2/image_raw, role: aux, lens: fisheye, shutter: global, size: [848, 800], rate_hz: 30}
+imus:
+  - {name: imu, topic: /imu/data, role: base, rate_hz: 400, type: gyro+accel}
+  - {name: gx3_25, topic: /gx3_25/data, role: aux, rate_hz: 500, type: gyro+accel}
+  - {name: gx3_35, topic: /gx3_35/imu/data, role: aux, rate_hz: 100, type: gyro+accel}
+  - {name: t265_imu, topic: /t265/imu, role: aux, rate_hz: 200, type: gyro+accel}

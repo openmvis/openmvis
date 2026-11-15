@@ -1,0 +1,35 @@
+# Camera-only calibration (Stage 4 template). Replace every <...>.
+# One entry per camera in scope; the base camera first (reference_camera: 0).
+# Mixed shutter types or unsynchronised cameras: one config per camera instead.
+mode: cam
+input:
+  cache_dir: <run>/cache             # same dir as cam_imu.yaml: one detection per recording
+  cameras:
+  - camera_id: 0
+    name: <cam0 name>
+    source_type: rosbag_topic        # rosbag_topic | ros2bag | euroc | images | timestamped_images
+    source_path: <dataset path>
+    topic: <image topic>             # rosbag_topic / ros2bag only
+    distortion_model: <radtan | kb4 | equidistant | eucm | ucm | double_sphere | omni_radtan | fov>
+    shutter_type: global             # global | rolling
+    factor_hz: 15.0
+board:
+  board_type: apriltag               # apriltag | chessboard
+  rows: <tags per column>
+  cols: <tags per row>
+  tag_size: <metres, measured>
+  tag_spacing: <gap / tag size ratio>
+  tag_family: t36h11                 # t36h11 (Kalibr grid) | t36h11b1
+solve:
+  max_iterations: 15
+  max_init_frames: 100
+  pixel_sigma: 1.0
+  huber_threshold: 1.345
+  corner_subsample: two_anti         # default: two diagonal corners per tag | all
+estimate:
+  board_points: false                # true when the board is not known to be flat
+output:
+  path: <run>/05_solve/attempt-NN/cam/calibration.yaml
+  format: yaml
+reference_camera: 0
+optimize_time_offset: true           # multi-camera: relative time offsets

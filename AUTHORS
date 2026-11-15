@@ -4,8 +4,8 @@ Yulin Yang <contact@openmvis.com> — author and maintainer
 
 ## Contributors
 
-Yuantai Zhang (Yuantai-Z) — camera-only pipeline fixes (outlier rejection, pose
+Yuantai Zhang (Yuantai-Z) and Xingxing Zuo (advisor) — camera-only pipeline fixes (outlier rejection, pose
 alignment, frame selection), the ROS1 recalibration tool (`tools/ros1_recalib`)
 and RealSense D435i recordings for the Device wiki
-Nerako Lee (nerakoo) — RealSense D455/D456 chessboard recordings and calibration
+Nerako Lee (nerakoo) and Chuchu Chen (advisor) — RealSense D455/D456 chessboard recordings and calibration
 runs for the Device wiki and the Calibench-VI community datasets

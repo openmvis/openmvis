@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Stage 3 — calibration parameter specification
+estimate:
+  camera_intrinsics: {camera_only: estimate, cam_imu: pinned}
+  camera_camera_extrinsics: estimate          # T265-1, T265-2 -> Blackfly
+  camera_imu_extrinsics: estimate             # T_C->I, all 3 cameras
+  camera_imu_td: estimate
+  rolling_shutter_readout: fixed              # all cameras global shutter
+  imu_intrinsics: {staging: dw_da, model: calyx}
+  gyro_accel_t_ga: estimate
+  imu_imu: estimate                           # 3 aux IMUs: T_Ij->I0 + td
+fixed:
+  imu_noise: MVIS defaults (sigma_g 0.01, sigma_bg 0.001, sigma_a 0.02, sigma_ba 0.002) — generic, no datasheet values supplied
+reference: none supplied (no CAD values for this run)

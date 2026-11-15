@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Stage 3 — calibration parameter specification
+estimate:
+  camera_intrinsics: {camera_only: estimate, cam_imu: pinned}
+  camera_camera_extrinsics: estimate        # cam1 -> cam0
+  camera_imu_extrinsics: estimate           # T_C->I, both cameras
+  camera_imu_td: estimate                   # hardware-synced; expected ~0
+  rolling_shutter_readout: fixed            # global shutter
+  imu_intrinsics: {staging: dw_da, model: calyx}
+  gyro_accel_t_ga: estimate
+fixed:
+  camera_camera_td: fixed (hardware trigger)
+  imu_noise: TUM-VI published BMI160 values (pinhole-equi-1024/imu-imucalib.yaml) —
+    sigma_g 1.6e-4, sigma_bg 2.2e-5, sigma_a 2.8e-3, sigma_ba 8.6e-4
+reference: TUM-VI published Kalibr calibration (pinhole-equi-1024/camchain-imucam-imucalib.yaml)
+  # p_CinI from inv(T_cam_imu): cam0 [45.38, -72.68, -45.07] mm, cam1 [-55.52, -71.10, -47.83] mm
+  # stereo baseline 100.95 mm

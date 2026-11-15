@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Stage 2 — sensor suite (TUM-VI raw 1024, calib-cam1 + calib-imu1)
+sync: hardware — cameras triggered by the IMU-board MCU, shared clock (TUM-VI design)
+cameras:
+  - {name: cam0, topic: /cam0/image_raw, role: base, lens: fisheye (~195 deg FOV), shutter: global, size: [1024, 1024], rate_hz: 20, encoding: mono16}
+  - {name: cam1, topic: /cam1/image_raw, role: aux, lens: fisheye (~195 deg FOV), shutter: global, size: [1024, 1024], rate_hz: 20, encoding: mono16}
+imus:
+  - {name: imu0, topic: /imu0, role: base, rate_hz: 200, type: gyro+accel, part: Bosch BMI160}
+recordings:
+  camera_only: dataset-calib-cam1.bag   # 109 s board sweep (cameras 4 Hz in this bag)
+  cam_imu: dataset-calib-imu1.bag       # 51.9 s IMU excitation, cameras 20 Hz

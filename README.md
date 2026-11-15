@@ -11,8 +11,7 @@
 
 **Open-source Multi-Visual-Inertial Sensor calibration.** A Python toolbox for
 **camera** and **camera-IMU** calibration, from a single camera to multi-camera,
-multi-IMU rigs, built on GTSAM factor graphs with native SO(3)/SE(3) Lie group
-support. OpenMVIS is the project, MVIS is the calibration toolbox, and
+multi-IMU rigs. OpenMVIS is the project, MVIS is the calibration toolbox, and
 `pymvis` is its Python package (import and CLI `mvis`).
 
 [openmvis.com](https://openmvis.com) (documentation) ·
@@ -57,8 +56,9 @@ support. OpenMVIS is the project, MVIS is the calibration toolbox, and
 - **Datasets**: `mvis datasets` lists, downloads and verifies the Calibench-VI
   recordings on Hugging Face. [Datasets](https://openmvis.com/datasets/)
 - **Pure Python**: `pip install`, no C++ build or ROS workspace. Linux and
-  macOS, Python 3.11 and 3.12 (GTSAM ships no Windows wheels and none below
-  cp311; `numpy<2` has no 3.13 wheel).
+  macOS, Python 3.11 and 3.12 (GTSAM ships no wheels below cp311; `numpy<2`
+  has no 3.13 wheel). Windows: tentative; it has run there, but GTSAM ships no
+  Windows wheels on PyPI, so install steps aren't written up yet.
   [Requirements](https://openmvis.com/getting-started/requirements/)
 
 The validation behind these claims is on
@@ -66,22 +66,55 @@ The validation behind these claims is on
 
 ## MVIS vs Kalibr vs Basalt
 
-| Aspect | MVIS | Kalibr | Basalt |
+✅ supported · ❌ not supported
+
+| Feature | MVIS | Kalibr | Basalt |
+|---|:---:|:---:|:---:|
+| **Install and platforms** | | | |
+| `pip install` | ✅ | ❌ | ❌ |
+| No ROS needed | ✅ | ❌ | ✅ |
+| Linux | ✅ | ✅ | ✅ |
+| macOS | ✅ | ❌ | ✅ |
+| Windows (tentative) | ✅ | ❌ | ❌ |
+| **Inputs** | | | |
+| ROS 1 bags | ✅ | ✅ | ✅ |
+| ROS 2 bags | ✅ | ❌ | ❌ |
+| EuRoC folders | ✅ | ❌ | ✅ |
+| Image folders | ✅ | ❌ | ❌ |
+| **Boards** | | | |
+| AprilGrid | ✅ | ✅ | ✅ |
+| ArUco | ✅ | ❌ | ❌ |
+| Chessboard | ✅ | ✅ | ❌ |
+| Circle grid | ❌ | ✅ | ❌ |
+| **Camera models** | | | |
+| RadTan | ✅ | ✅ | ❌ |
+| Equidistant / KB4 | ✅ | ✅ | ✅ |
+| FOV | ✅ | ✅ | ❌ |
+| Double Sphere (DS) | ✅ | ✅ | ✅ |
+| EUCM | ✅ | ✅ | ✅ |
+| UCM | ✅ | ❌ | ✅ |
+| Omni + RadTan | ✅ | ✅ | ❌ |
+| **Cameras** | | | |
+| More than two cameras | ✅ | ✅ | ❌ |
+| Cameras without shared view | ✅ | ❌ | ❌ |
+| Rolling shutter, one camera | ✅ | ✅ | ❌ |
+| Rolling shutter, joint readout across cameras | ✅ | ❌ | ❌ |
+| **Time and IMU** | | | |
+| Camera–IMU time offset | ✅ | ✅ | ✅ |
+| Camera–camera time offset | ✅ | ❌ | ❌ |
+| IMU intrinsics (scale, misalignment) | ✅ | ❌ | ✅ |
+| Gyro–accel time offset (t_ga) | ✅ | ❌ | ❌ |
+| **Output** | | | |
+| Self-contained HTML report | ✅ | ❌ | ❌ |
+
+How each tool works:
+
+| | MVIS | Kalibr | Basalt |
 |---|---|---|---|
-| **Install** | `pip install` (no ROS) | C++ build + ROS workspace | C++ build (no ROS) |
-| **Platforms** | Linux / macOS | Linux (ROS only) | Linux / macOS |
 | **Optimizer** | GTSAM factor graph (LM) | Custom `aslam_optimizer` | Custom LM + Gauss-Newton |
 | **Trajectory** | Per-frame pose + SLERP | B-spline (order 6) | B-spline SE(3) (order 5) |
-| **Inputs** | Images, ROS1/2 bags, EuRoC | ROS1 bags only | ROS bags, EuRoC |
-| **Boards** | AprilGrid, ArUco, Chessboard | AprilGrid, Checker, Circle | AprilGrid only |
-| **Camera models** | RadTan, Equidistant, kb4, FOV, DS, EUCM, UCM, omni_radtan | RadTan, Equi, FOV, Omni, OmniRadtan, EUCM, DS | DS, EUCM, UCM, Pinhole, KB4 |
-| **Rolling shutter** | Single-cam + joint multi-cam readout | Single-cam only | Not supported |
-| **Time offset (cam-cam)** | Supported | Not supported | Not supported |
-| **Time offset (cam-IMU)** | Supported | Supported | Supported |
-| **IMU calibration** | Extrinsics + td + readout + IMU intrinsics (Dw/Da/Tg) + biases + t_ga | Extrinsics + temporal | Biases, scale, gravity, td |
-| **Multi-camera** | N cameras (no FOV overlap needed) | Chain (FOV overlap required) | Stereo only |
-| **Outlier rejection** | Two-pass: P99 + warm-start rerun | Single-pass Blake-Zisserman | Single-pass Huber |
-| **Output** | YAML + self-contained HTML report | YAML + TXT + PDF | JSON (cereal) |
+| **Outlier rejection** | Two passes: P99, then a warm-start rerun | One pass, Blake-Zisserman | One pass, Huber |
+| **Output files** | YAML + HTML report | YAML + TXT + PDF | JSON (cereal) |
 
 Measured side by side on the same public recordings, every parameter as
 median ± sd across recordings:
@@ -93,7 +126,7 @@ neither is distributed with MVIS.
 
 ## Get started
 
-Python 3.11 or 3.12, Linux or macOS:
+Python 3.11 or 3.12, on Linux or macOS (Windows tentative):
 
 ```bash
 pip install "pymvis[apriltag,ros1]"      # AprilGrid boards + ROS1 bag input
@@ -114,7 +147,17 @@ mvis run   -c examples/regression/mvis_4imus_3cams/cam_imu_april_01.yaml
 ```
 
 The run writes the calibration YAML, a JSON result and an HTML report next to
-the config's `output_file`. Everything else is on openmvis.com:
+the config's `output_file`.
+
+**Calibrate your own rig with the agent.** The repository ships a
+[Claude Code](https://claude.com/claude-code) skill, `mvis-calibrate`, that
+takes you from a raw recording to a verified, released calibration in seven
+gated stages, built on `mvis inspect`, `mvis check`, `mvis run`,
+`mvis verdict` and `mvis roundtrip`. Start Claude Code in a checkout (or copy
+`.claude/` next to your data), say "calibrate my rig, data at …" or run
+`/mvis-calibrate`. Details and two worked examples: [doc/agent.md](doc/agent.md).
+
+Everything else is on openmvis.com:
 
 - [Installation](https://openmvis.com/getting-started/installation/) and
   [Quickstart](https://openmvis.com/getting-started/quickstart/)
@@ -171,9 +214,9 @@ If your results depend on the Calibench-VI datasets, cite them too; the entries 
 ## Contributors
 
 - **Yulin Yang** ([yangyulin](https://github.com/yangyulin)) — author and maintainer.
-- **Yuantai Zhang** ([Yuantai-Z](https://github.com/Yuantai-Z)) — camera-only pipeline fixes,
+- **Yuantai Zhang** ([Yuantai-Z](https://github.com/Yuantai-Z)) and **Xingxing Zuo** ([homepage](https://xingxingzuo.github.io/), advisor) — camera-only pipeline fixes,
   the ROS1 recalibration tool and RealSense D435i recordings.
-- **Nerako Lee** ([nerakoo](https://github.com/nerakoo)) — RealSense D455/D456 recordings and
+- **Nerako Lee** ([nerakoo](https://github.com/nerakoo)) and **Chuchu Chen** ([homepage](https://mae.engineering.gwu.edu/chuchu-chen), advisor) — RealSense D455/D456 recordings and
   calibration runs for the Device wiki and the Calibench-VI community datasets.
 
 The full list is in [AUTHORS](AUTHORS); the people behind the datasets and the MVIS paper are on

@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+mode: cam-imu
+input:
+  format: ros1
+  path: <DATA>/dataset-calib-imu1.bag
+  cam_topics: [/cam0/image_raw, /cam1/image_raw]
+  imu_topics: [/imu0]
+  window_mode: motion
+  segment_length: 80.0          # bag is 51.9 s: the whole recording is used
+  cache_dir: <RUN>/cache
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.088
+  tag_spacing: 0.3
+  tag_family: t36h11
+camera_input:
+  path: <RUN>/05_solve/attempt-01/cam/calibration.yaml
+  cameras:                      # base cam0 tracks state_hz; cam1 aux at 8 Hz
+    - {estimate_readout: false}
+    - {estimate_readout: false, factor_hz: 8.0}
+solve:
+  max_iterations: 40
+  rms_gate_px: 3.0
+  estimate_t_ga: true
+  sigma_g: 1.6e-4               # TUM-VI published BMI160 noise
+  sigma_bg: 2.2e-5
+  sigma_a: 2.8e-3
+  sigma_ba: 8.6e-4
+estimate:
+  camera:
+    intrinsics: false
+    tr: false
+    td: true
+    extrinsics: true
+  imu:
+    intrinsics: dw_da
+    model: calyx
+reference:
+  label: TUM-VI Kalibr (pinhole-equi-1024)
+  lever_mm: {cam0: [45.38, -72.68, -45.07], cam1: [-55.52, -71.10, -47.83]}
+  baseline_mm: 100.95
+output:
+  path: <RUN>/05_solve/attempt-01/cam_imu/cam_imu.json

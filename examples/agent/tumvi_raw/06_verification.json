@@ -1,0 +1,144 @@
+{
+ "kind": "cam-imu",
+ "grade": "YELLOW",
+ "checks": [
+  {
+   "id": "solve.ok",
+   "subject": "solve",
+   "value": true,
+   "threshold": "true",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.median",
+   "subject": "all cameras",
+   "value": 0.108,
+   "threshold": "<= 1.41 / 2.83 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.p95",
+   "subject": "all cameras",
+   "value": 0.276,
+   "threshold": "<= 2.83 / 5.66 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "solve.converged",
+   "subject": "solve",
+   "value": 5,
+   "threshold": "< max_iterations (40)",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "fit.cam_chi2_dof",
+   "subject": "camera",
+   "value": 0.0205,
+   "threshold": "<= 1.5 / 3.0",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "fit.imu_chi2_dof",
+   "subject": "IMU",
+   "value": 0.5248,
+   "threshold": "<= 1.5 / 3.0",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.median",
+   "subject": "cam0",
+   "value": 0.109,
+   "threshold": "<= 1.41 / 2.83 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.p95",
+   "subject": "cam0",
+   "value": 0.273,
+   "threshold": "<= 2.83 / 5.66 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "time.td",
+   "subject": "cam0",
+   "value": 0.18,
+   "threshold": "|td| <= 50.0 ms",
+   "status": "pass",
+   "note": "large offset: real acquisition latency or a bad stamp"
+  },
+  {
+   "id": "reproj.median",
+   "subject": "cam1",
+   "value": 0.107,
+   "threshold": "<= 1.41 / 2.83 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.p95",
+   "subject": "cam1",
+   "value": 0.278,
+   "threshold": "<= 2.83 / 5.66 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "time.td",
+   "subject": "cam1",
+   "value": 0.183,
+   "threshold": "|td| <= 50.0 ms",
+   "status": "pass",
+   "note": "large offset: real acquisition latency or a bad stamp"
+  },
+  {
+   "id": "imu.dw_scale",
+   "subject": "Dw_diag",
+   "value": 0.0943,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "warn",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "imu.da_scale",
+   "subject": "Da_diag",
+   "value": 0.0265,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "ref.lever",
+   "subject": "cam0",
+   "value": 3.81,
+   "threshold": "|\u0394| <= 10.0 mm",
+   "status": "pass",
+   "note": "TUM-VI Kalibr (pinhole-equi-1024)"
+  },
+  {
+   "id": "ref.lever",
+   "subject": "cam1",
+   "value": 5.1,
+   "threshold": "|\u0394| <= 10.0 mm",
+   "status": "pass",
+   "note": "TUM-VI Kalibr (pinhole-equi-1024)"
+  },
+  {
+   "id": "ref.baseline",
+   "subject": "cam1",
+   "value": 0.19,
+   "threshold": "|\u0394| <= 5.0 mm",
+   "status": "pass",
+   "note": "TUM-VI Kalibr (pinhole-equi-1024)"
+  }
+ ],
+ "independent_check": "cross-tool",
+ "verified": true
+}

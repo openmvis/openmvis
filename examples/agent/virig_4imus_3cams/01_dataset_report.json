@@ -1,0 +1,137 @@
+{
+ "path": "<DATA>/virig_4imus_3cams_april_01.bag",
+ "format": "ros1",
+ "supported_modes": [
+  "cam",
+  "cam-imu"
+ ],
+ "duration_s": 130.813395643,
+ "streams": [
+  {
+   "name": "/blackfly/image_raw",
+   "kind": "camera",
+   "count": 3924,
+   "rate_hz": 30.0,
+   "start_s": 1629481969.792516,
+   "end_s": 1629482100.6059117,
+   "info": {
+    "width": 720,
+    "height": 540,
+    "encoding": "mono8"
+   }
+  },
+  {
+   "name": "/gx3_25/data",
+   "kind": "imu",
+   "count": 65407,
+   "rate_hz": 499.38,
+   "start_s": 1629481969.7846174,
+   "end_s": 1629482100.5980132,
+   "info": {}
+  },
+  {
+   "name": "/gx3_35/imu/data",
+   "kind": "imu",
+   "count": 13081,
+   "rate_hz": 99.99,
+   "start_s": 1629481969.7876768,
+   "end_s": 1629482100.6010725,
+   "info": {}
+  },
+  {
+   "name": "/imu/data",
+   "kind": "imu",
+   "count": 52326,
+   "rate_hz": 400.99,
+   "start_s": 1629481969.786517,
+   "end_s": 1629482100.5999126,
+   "info": {}
+  },
+  {
+   "name": "/t265/fisheye1/image_raw",
+   "kind": "camera",
+   "count": 3924,
+   "rate_hz": 30.0,
+   "start_s": 1629481969.8018613,
+   "end_s": 1629482100.615257,
+   "info": {
+    "width": 848,
+    "height": 800,
+    "encoding": "mono8"
+   }
+  },
+  {
+   "name": "/t265/fisheye2/image_raw",
+   "kind": "camera",
+   "count": 3924,
+   "rate_hz": 30.0,
+   "start_s": 1629481969.8040082,
+   "end_s": 1629482100.617404,
+   "info": {
+    "width": 848,
+    "height": 800,
+    "encoding": "mono8"
+   }
+  },
+  {
+   "name": "/t265/imu",
+   "kind": "imu",
+   "count": 26177,
+   "rate_hz": 200.12,
+   "start_s": 1629481969.7870789,
+   "end_s": 1629482100.6004746,
+   "info": {}
+  }
+ ],
+ "findings": [
+  {
+   "id": "imu.stamps_monotonic",
+   "subject": "/gx3_25/data",
+   "status": "pass",
+   "message": "stamps strictly increasing"
+  },
+  {
+   "id": "imu.accel_units",
+   "subject": "/gx3_25/data",
+   "status": "pass",
+   "message": "|a| median 9.80 m/s^2"
+  },
+  {
+   "id": "imu.stamps_monotonic",
+   "subject": "/gx3_35/imu/data",
+   "status": "pass",
+   "message": "stamps strictly increasing"
+  },
+  {
+   "id": "imu.accel_units",
+   "subject": "/gx3_35/imu/data",
+   "status": "pass",
+   "message": "|a| median 9.81 m/s^2"
+  },
+  {
+   "id": "imu.stamps_monotonic",
+   "subject": "/imu/data",
+   "status": "pass",
+   "message": "stamps strictly increasing"
+  },
+  {
+   "id": "imu.accel_units",
+   "subject": "/imu/data",
+   "status": "pass",
+   "message": "|a| median 9.81 m/s^2"
+  },
+  {
+   "id": "imu.stamps_monotonic",
+   "subject": "/t265/imu",
+   "status": "pass",
+   "message": "stamps strictly increasing"
+  },
+  {
+   "id": "imu.accel_units",
+   "subject": "/t265/imu",
+   "status": "pass",
+   "message": "|a| median 9.55 m/s^2"
+  }
+ ],
+ "status": "pass"
+}

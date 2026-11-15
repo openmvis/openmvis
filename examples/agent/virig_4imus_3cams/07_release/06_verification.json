@@ -1,0 +1,216 @@
+{
+ "kind": "cam-imu",
+ "grade": "GREEN",
+ "checks": [
+  {
+   "id": "solve.ok",
+   "subject": "solve",
+   "value": true,
+   "threshold": "true",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.median",
+   "subject": "all cameras",
+   "value": 0.254,
+   "threshold": "<= 1.41 / 2.83 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.p95",
+   "subject": "all cameras",
+   "value": 0.757,
+   "threshold": "<= 2.83 / 5.66 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "solve.converged",
+   "subject": "solve",
+   "value": 6,
+   "threshold": "< max_iterations (40)",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "fit.cam_chi2_dof",
+   "subject": "camera",
+   "value": 0.1914,
+   "threshold": "<= 1.5 / 3.0",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "fit.imu_chi2_dof",
+   "subject": "IMU",
+   "value": 0.0361,
+   "threshold": "<= 1.5 / 3.0",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.median",
+   "subject": "cam0",
+   "value": 0.281,
+   "threshold": "<= 1.41 / 2.83 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.p95",
+   "subject": "cam0",
+   "value": 0.768,
+   "threshold": "<= 2.83 / 5.66 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "time.td",
+   "subject": "cam0",
+   "value": -2.878,
+   "threshold": "|td| <= 50.0 ms",
+   "status": "pass",
+   "note": "large offset: real acquisition latency or a bad stamp"
+  },
+  {
+   "id": "reproj.median",
+   "subject": "cam1",
+   "value": 0.238,
+   "threshold": "<= 1.41 / 2.83 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.p95",
+   "subject": "cam1",
+   "value": 0.752,
+   "threshold": "<= 2.83 / 5.66 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "time.td",
+   "subject": "cam1",
+   "value": -3.663,
+   "threshold": "|td| <= 50.0 ms",
+   "status": "pass",
+   "note": "large offset: real acquisition latency or a bad stamp"
+  },
+  {
+   "id": "reproj.median",
+   "subject": "cam2",
+   "value": 0.249,
+   "threshold": "<= 1.41 / 2.83 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "reproj.p95",
+   "subject": "cam2",
+   "value": 0.751,
+   "threshold": "<= 2.83 / 5.66 px",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "time.td",
+   "subject": "cam2",
+   "value": -6.292,
+   "threshold": "|td| <= 50.0 ms",
+   "status": "pass",
+   "note": "large offset: real acquisition latency or a bad stamp"
+  },
+  {
+   "id": "imu.dw_scale",
+   "subject": "Dw_diag",
+   "value": 0.0035,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "imu.da_scale",
+   "subject": "Da_diag",
+   "value": 0.0031,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "fit.aux_imu_chi2_dof",
+   "subject": "gx3_25",
+   "value": 0.009,
+   "threshold": "<= 1.5 / 3.0",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "imu.dw_scale",
+   "subject": "gx3_25",
+   "value": 0.004,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "imu.da_scale",
+   "subject": "gx3_25",
+   "value": 0.0029,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "fit.aux_imu_chi2_dof",
+   "subject": "gx3_35",
+   "value": 0.01,
+   "threshold": "<= 1.5 / 3.0",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "imu.dw_scale",
+   "subject": "gx3_35",
+   "value": 0.0033,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "imu.da_scale",
+   "subject": "gx3_35",
+   "value": 0.0029,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "fit.aux_imu_chi2_dof",
+   "subject": "t265",
+   "value": 0.019,
+   "threshold": "<= 1.5 / 3.0",
+   "status": "pass",
+   "note": ""
+  },
+  {
+   "id": "imu.dw_scale",
+   "subject": "t265",
+   "value": 0.0065,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  },
+  {
+   "id": "imu.da_scale",
+   "subject": "t265",
+   "value": 0.0218,
+   "threshold": "|diag-1| <= 0.05",
+   "status": "pass",
+   "note": "large scale error: plausible for a raw consumer IMU; confirm across recordings"
+  }
+ ],
+ "independent_check": "cross-tool",
+ "verified": true
+}

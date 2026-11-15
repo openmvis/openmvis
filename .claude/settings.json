@@ -1,0 +1,23 @@
+{
+  "env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "MPLBACKEND": "Agg"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(mvis --version)",
+      "Bash(mvis inspect:*)",
+      "Bash(mvis check:*)",
+      "Bash(mvis verdict:*)",
+      "Bash(mvis run:*)",
+      "Bash(mvis roundtrip:*)",
+      "Bash(mvis datasets list:*)",
+      "Bash(which mvis)",
+      "Bash(mkdir -p results/agent_runs/:*)",
+      "Bash(mkdir -p mvis_runs/:*)"
+    ]
+  }
+}
