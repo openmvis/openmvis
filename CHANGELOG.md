@@ -37,7 +37,9 @@ is no earlier public version to compare against.
   what is pinned, including the board shape (`board_points`), on both modes. With
   `board_points` off the board is held at its given shape.
 - Defaults: camera-only `corner_subsample: two_anti` (two diagonal corners per
-  AprilTag; one corner moves the principal point by up to 0.8 px), cam-IMU `all`;
+  AprilTag; one corner moves the principal point by up to 0.8 px; with
+  `estimate.board_points` on it warns that the dropped corners keep their prior height,
+  and `all` estimates every corner at about 1.8x the solve time), cam-IMU `all`;
   `estimate_t_ga: true` in cam-IMU runs; the `mvis` CLI pins BLAS to one thread
   (`doc/blas_threads.md`).
 
@@ -49,6 +51,13 @@ is no earlier public version to compare against.
   is shifted or min-max stretched, colour becomes grey with OpenCV luma, image
   folders keep the sensor's stored orientation, and an unknown encoding or a frame
   of the wrong size stops with an error.
+- ROS2 bags are read with `rosbags`, with no ROS install: the bag folder, or one
+  `.db3` / `.mcap` file, in camera-only (`source_type: ros2bag`) and cam-IMU
+  (`input.format: ros2`) runs, and `mvis inspect` lists their streams. Times are
+  the header stamps, as for ROS1. `mvis roundtrip` and `apply-calib` stay
+  ROS1-only. The `ros1` extra needs `rosbags>=0.11.6`, which reads ROS2 bags whose
+  type hashes are empty (bags written by converters, such as the Hilti-Trimble
+  2026 calibration bags).
 - Boards: AprilGrid (`aprilgrid`), chessboard, ArUco.
 - Kalibr interop (`mvis.io.kalibr`): read and write `camchain` and
   `camchain-imucam`, load AprilGrid targets from Kalibr YAML.

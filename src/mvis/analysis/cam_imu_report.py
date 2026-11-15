@@ -477,6 +477,32 @@ def _fig_html(fig):
             f'<img src="data:image/png;base64,{_fig_to_base64(fig)}"></div>')
 
 
+def _board_shape_body(rep, board):
+    """Summary table and per-corner map of the estimated board shape (`diagnostics['board_heights']`),
+    or "" when the run did not estimate it. The map needs the board; without it only the table shows."""
+    if not rep or rep.get("heights_m") is None:
+        return ""
+    sig = rep.get("sigma_m")
+    n_obs = rep.get("n_obs")
+    seen = (np.asarray(n_obs) > 0) if n_obs is not None else None
+    sig_med = (float(np.median(np.asarray(sig, float)[seen] if seen is not None else sig)) * 1e3
+               if sig is not None and (seen is None or seen.any()) else None)
+    rows = [["Peak to peak (mm)", f"{rep['p2p_mm']:.2f}" if rep.get("p2p_mm") is not None else "&mdash;"],
+            ["RMS (mm)", f"{rep['rms_mm']:.2f}" if rep.get("rms_mm") is not None else "&mdash;"],
+            ["Corners seen", f"{rep.get('n_seen', '&mdash;')} of {len(rep['heights_m'])}"],
+            ["Median height σ (mm)", f"{sig_med:.2f}" if sig_med is not None else "&mdash;"]]
+    body = ("<p>Per-corner height off the flat board, estimated with the camera-IMU solve "
+            "(<code>estimate.board_points</code>). The mean plane and tilt belong to the board "
+            "pose, so a flat board shows only noise here.</p>" + _tbl(["Metric", "Value"], rows))
+    if board is not None:
+        from mvis.analysis.plot_errors import plot_board_shape
+        try:
+            body += _fig_html(plot_board_shape(rep["heights_m"], board, n_obs))
+        except ValueError as e:          # heights for a different board than the one passed
+            logging.getLogger(__name__).warning("board shape map skipped: %s", e)
+    return body
+
+
 def _config_body(config):
     """Verbatim, copy-paste-ready run configuration.
 
@@ -877,6 +903,11 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
         ])
         cam_body += f"<h3>Camera {r['id']}</h3>" + det
     sections.append(sec("sec-cameras", "Cameras", cam_body))
+
+    # ---- Board shape (only when estimate.board_points was on) ------------
+    shape_body = _board_shape_body(d.get("board_heights"), board)
+    if shape_body:
+        sections.append(sec("sec-board-shape", "Board Shape", shape_body))
 
     # ---- Reprojection analysis: all cameras, then one subsection per camera
     fig = _plot_reproj_frames(d)

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pymvis"
 dynamic = ["version"]
-description = "Camera and camera-IMU calibration toolbox — multi-camera, multi-IMU, on-manifold SO(3)/SE(3) optimization"
+description = "Open-source multi-visual-inertial sensor calibration: camera and camera-IMU calibration for single-camera to multi-camera, multi-IMU rigs"
 readme = "README.md"
 license = "GPL-3.0-only"
 license-files = ["LICENSE", "COMMERCIAL-LICENSE.md"]
@@ -60,7 +60,7 @@ apriltag = ["aprilgrid>=0.5"]
 # `cv2`; pip installs both and the last one wins. Prefer `pip install pymvis[aruco]`
 # in a clean env, or uninstall opencv-python first if cv2 misbehaves.
 aruco = ["opencv-contrib-python>=4.5,<4.12"]   # <4.12: same numpy>=2 rule as opencv-python
-ros1 = ["rosbags>=0.11"]
+ros1 = ["rosbags>=0.11.6"]   # ROS1 and ROS2 bags; 0.11.6 reads ROS2 bags with empty type hashes
 # PyAV decodes the H.265 camera streams in the MCAP converter (also used by the
 # PennCOSYVIO converter, which has no extra of its own: `pip install av`).
 mcap = ["mcap>=1.1", "mcap-protobuf-support>=0.5", "av>=10"]

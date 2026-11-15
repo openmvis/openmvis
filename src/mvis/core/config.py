@@ -662,9 +662,9 @@ class CamImuCalibConfig:
 
 @dataclass
 class CamImuInputConfig:
-    """Dataset input for a cam-IMU run (ROS1 bag OR EuRoC mav0 dir)."""
-    format: str = "ros1"            # "ros1" | "euroc"
-    path: str = ""                  # bag file (ros1) or mav0 dir (euroc)
+    """Dataset input for a cam-IMU run (ROS1 or ROS2 bag, OR EuRoC mav0 dir)."""
+    format: str = "ros1"            # "ros1" | "ros2" | "euroc"
+    path: str = ""                  # bag file (ros1), bag folder / .db3 / .mcap (ros2) or mav0 dir (euroc)
     bags: list[str] = field(default_factory=list)   # OPTIONAL bag SET for a repeatability sweep:
                                     # one config calibrates each bag to <out>/bag<NN>/cam_imu.json
                                     # (discoverable by the repeatability study). Empty = use `path`.

@@ -627,7 +627,7 @@ def calibrate_cam_imu(config) -> dict:
                     f" + {kalibr_yaml}" if kalibr_yaml else "")
     # I5-3 shadow: the camchain must be reproducible as an export VIEW of the
     # attached run. Exact compare except T_cn_cnm1 (recomposed through Pose3,
-    # matches to float precision) and rostopic (writer synthesizes /camN/...).
+    # matches to float precision) and rostopic (the writer has the bag topics, the db view /camN/...).
     if kalibr_yaml and r.ok and _dbp and '_rid' in dir() and _rid:
         try:
             import numpy as _np
@@ -849,7 +849,7 @@ def main():
     (calibrate / cam / cam-imu / run / apply-calib / roundtrip / …) and
     dispatch to its handler. Exits nonzero via SystemExit on unknown modes."""
     parser = argparse.ArgumentParser(
-        description="MVIS — Camera Calibration Toolbox",
+        description="MVIS: open-source multi-visual-inertial sensor calibration (camera and camera-IMU)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "environment:\n"

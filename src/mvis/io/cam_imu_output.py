@@ -209,8 +209,12 @@ def build_cam_imu_dict(result, cam_topics=None, imu_topics=None) -> dict:
     return out
 
 
-def to_kalibr_camchain_imucam(result) -> dict:
-    """Kalibr camchain-imucam export (cam0..; T_cam_imu, T_cn_cnm1, intrinsics)."""
+def to_kalibr_camchain_imucam(result, cam_topics=None) -> dict:
+    """Kalibr camchain-imucam export (cam0..; T_cam_imu, T_cn_cnm1, intrinsics).
+
+    Keys are cam0.. in solve order, as Kalibr numbers them. `rostopic` is the topic the camera was
+    read from (`cam_topics`), so a one-camera run on /cam1/... names /cam1/...; /cam<c>/image_raw
+    only when no topics are given."""
     cams = result.cameras or []
     out = {}
     for c, e in enumerate(cams):
@@ -227,7 +231,8 @@ def to_kalibr_camchain_imucam(result) -> dict:
             distortion_coeffs=k_coeffs,
             intrinsics=k_intr,
             resolution=_img_size(e),
-            rostopic=f"/cam{c}/image_raw",
+            rostopic=(cam_topics[c] if cam_topics and c < len(cam_topics) and cam_topics[c]
+                      else f"/cam{c}/image_raw"),
             T_cam_imu=_T_cam_imu(cal),
         )
         sz = _img_size(e)                       # Kalibr stores per-line readout
@@ -253,6 +258,6 @@ def write_cam_imu_calibration(result, path: str, kalibr_path: str | None = None,
     if kalibr_path:
         # build first: a non-exportable camera raises before the file is
         # opened, so no half-written camchain is left behind
-        chain = to_kalibr_camchain_imucam(result)
+        chain = to_kalibr_camchain_imucam(result, cam_topics=cam_topics)
         with open(kalibr_path, "w") as f:
             yaml.safe_dump(chain, f, sort_keys=False)

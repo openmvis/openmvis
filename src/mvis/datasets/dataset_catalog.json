@@ -2010,6 +2010,77 @@
      }
     }
    ]
+  },
+  {
+   "key": "hilti_2026",
+   "title": "Hilti-Trimble SLAM Challenge 2026 calibration",
+   "suites": [
+    "camera_only",
+    "camera_imu"
+   ],
+   "license_bucket": "cc_by_nc_sa",
+   "hosting_policy": "recipe_only",
+   "native_format": "rosbag",
+   "notes": "Insta360 ONE RS 1-Inch 360: two back-to-back rolling-shutter fisheye lenses, 1472x1440 JPEG at 30 Hz (/cam0/image_raw/compressed, /cam1/image_raw/compressed) + 1 kHz IMU (/imu/data_raw). ROS2 sqlite3 bags with empty type hashes: need rosbags>=0.11.6; give MVIS the rosbag folder or its .db3. cam0_cam1 = camera pair on a 6x6 AprilGrid (tag 80 mm, spacing 0.3), camera still; cam0_imu / cam1_imu = one lens + IMU each on a 7x12 AprilGrid (tag 150 mm, spacing 0.25) that is twisted about 12 mm peak to peak, so estimate the board shape. The Hub's cam0_imu/rosbag/rosbag_blurred_0.db3 is byte-identical to rosbag.db3 (same sha256).",
+   "attribution": {
+    "creator": "Hilti, Trimble and the University of Oxford (Hilti-Trimble SLAM Challenge 2026)",
+    "license": "CC BY-NC-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-nc-sa/3.0/",
+    "source_url": "https://github.com/Hilti-Research/hilti-trimble-slam-challenge-2026",
+    "citation": "Hilti-Trimble SLAM Challenge 2026 dataset, camera_calibration recordings",
+    "doi": null
+   },
+   "sources": [
+    {
+     "sequence": "cam0_cam1",
+     "local_relative_path": "hilti_2026/camera_calibration/cam0_cam1/rosbag/rosbag.db3",
+     "url": "https://huggingface.co/datasets/Hilti-Research/hilti-trimble-slam-challenge-2026/resolve/ac5fd207e10a7a45438f04d1dbc96a529b1088be/camera_calibration/cam0_cam1/rosbag/rosbag.db3",
+     "sha256": "54fdce5229abf9c0e519be01b04d694017503951d30562bf08b249c4a5bdf501",
+     "size_bytes": 7164887040,
+     "suite": "camera_only"
+    },
+    {
+     "sequence": "cam0_cam1_metadata",
+     "local_relative_path": "hilti_2026/camera_calibration/cam0_cam1/rosbag/metadata.yaml",
+     "url": "https://huggingface.co/datasets/Hilti-Research/hilti-trimble-slam-challenge-2026/resolve/ac5fd207e10a7a45438f04d1dbc96a529b1088be/camera_calibration/cam0_cam1/rosbag/metadata.yaml",
+     "sha256": "78a26cf4e4b700652eb9a1c43a3d7fbb90c74f398e55e18b31ccb83b2674fe33",
+     "size_bytes": 1245,
+     "suite": "camera_only"
+    },
+    {
+     "sequence": "cam0_imu",
+     "local_relative_path": "hilti_2026/camera_calibration/cam0_imu/rosbag/rosbag.db3",
+     "url": "https://huggingface.co/datasets/Hilti-Research/hilti-trimble-slam-challenge-2026/resolve/ac5fd207e10a7a45438f04d1dbc96a529b1088be/camera_calibration/cam0_imu/rosbag/rosbag.db3",
+     "sha256": "65a4df3f56ca19794f27a5919ffc88d518a02934e596545ffb885e64c940a679",
+     "size_bytes": 7852101632,
+     "suite": "camera_imu"
+    },
+    {
+     "sequence": "cam0_imu_metadata",
+     "local_relative_path": "hilti_2026/camera_calibration/cam0_imu/rosbag/metadata.yaml",
+     "url": "https://huggingface.co/datasets/Hilti-Research/hilti-trimble-slam-challenge-2026/resolve/ac5fd207e10a7a45438f04d1dbc96a529b1088be/camera_calibration/cam0_imu/rosbag/metadata.yaml",
+     "sha256": "2bb054251dd91ced3d5048e58d87425cc1422d3feb5592352fbcd293802d740d",
+     "size_bytes": 1245,
+     "suite": "camera_imu"
+    },
+    {
+     "sequence": "cam1_imu",
+     "local_relative_path": "hilti_2026/camera_calibration/cam1_imu/rosbag/rosbag.db3",
+     "url": "https://huggingface.co/datasets/Hilti-Research/hilti-trimble-slam-challenge-2026/resolve/ac5fd207e10a7a45438f04d1dbc96a529b1088be/camera_calibration/cam1_imu/rosbag/rosbag.db3",
+     "sha256": "4cd49b44a8684be93c0d63c724aeb0dc4d0c40419525faf4ace2e5d50f37374c",
+     "size_bytes": 6885531648,
+     "suite": "camera_imu"
+    },
+    {
+     "sequence": "cam1_imu_metadata",
+     "local_relative_path": "hilti_2026/camera_calibration/cam1_imu/rosbag/metadata.yaml",
+     "url": "https://huggingface.co/datasets/Hilti-Research/hilti-trimble-slam-challenge-2026/resolve/ac5fd207e10a7a45438f04d1dbc96a529b1088be/camera_calibration/cam1_imu/rosbag/metadata.yaml",
+     "sha256": "c50b1e8c933ebaf4c12d888c1a8b1902971981c7ace755ddc6442a95790d704c",
+     "size_bytes": 1245,
+     "suite": "camera_imu"
+    }
+   ],
+   "conversion_chain": []
   }
  ]
 }

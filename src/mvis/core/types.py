@@ -153,6 +153,9 @@ class CalibrationResult:
     valid_frame_indices: list[int] = field(default_factory=list)
     board_points_refined: Optional[np.ndarray] = None  # Nx3 refined board points
     board_heights: Optional[np.ndarray] = None  # N out-of-plane corner heights (m), plane removed
+    # N vision factors per corner in the solve that estimated board_heights; 0 = the height was
+    # never constrained (e.g. a corner dropped by corner_subsample) and sits at its prior
+    board_height_n_obs: Optional[np.ndarray] = None
     board_point_bias: Optional[np.ndarray] = None  # Nx3 [mean du, mean dv (px), n_obs] per corner
     # {camera_id: count of each corner's fate at the final poses}, see
     # calibration.corner_accounting; a diagnostic, absent from older results

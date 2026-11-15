@@ -831,6 +831,14 @@ class CalibrationPipeline:
                     )
                     mode = "all"
 
+        # Board shape gives every corner its own height: a corner the subsample drops has no
+        # data and stays at its prior (half the board under two_anti). Every corner is opt-in
+        # (corner_subsample: all) because it doubles the observations and makes the solve about 1.8x slower (plan M4.3).
+        if mode != "all" and self._config.board_heights:
+            logger.warning(
+                f"estimate.board_points with corner_subsample '{mode}': the corners it drops "
+                f"keep their prior heights; set corner_subsample: all to estimate every corner")
+
         if mode != "all":
             from mvis.detection.corner_subsample import filter_frames
             before = sum(len(f.observations) for fr in all_frames.values() for f in fr)

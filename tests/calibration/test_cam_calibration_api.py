@@ -84,3 +84,27 @@ def test_single_cam_wrapper_runs():
     assert r is not None
     fx = float(np.asarray(r.cameras[0].intrinsics, float)[0])
     assert abs(fx - 500.0) < 25.0          # near the true fx=500
+
+
+def test_board_shape_with_subsample_warns(caplog):
+    """Camera-only `estimate.board_points` with the default two_anti subsample uses two corners
+    per tag, so the other half of the corner heights have no data (Hilti 7x12 board, plan M4.3).
+    Every corner stays opt-in (it is 7-9x slower); the pipeline keeps the subsample and warns."""
+    import logging
+    from mvis.detection.apriltag_board import AprilTagBoard
+    board = AprilTagBoard(rows=6, cols=6, tag_size=0.04, tag_spacing=0.012)   # spacing is the gap in metres here
+    frames = _gen_frames(board, n=12)
+
+    def run(board_heights):
+        pc = PipelineConfig(max_iterations=5, max_iterations_single=5, corner_subsample="two_anti",
+                            rerun_after_outlier_rejection=False, distortion_models={0: "radtan"},
+                            board_heights=board_heights, verbose=False)
+        caplog.clear()
+        with caplog.at_level(logging.INFO, logger="mvis.calibration.pipeline_cam"):
+            CalibrationPipeline(board, pc).run({0: frames}, {0: _IMG})
+        return caplog.text
+
+    on = run(True)
+    assert "set corner_subsample: all" in on and "Corner subsample (two_anti)" in on
+    off = run(False)
+    assert "Corner subsample (two_anti)" in off and "set corner_subsample: all" not in off

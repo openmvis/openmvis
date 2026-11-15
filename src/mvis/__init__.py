@@ -15,6 +15,6 @@
 #
 # SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
 # SPDX-License-Identifier: GPL-3.0-only
-"""MVIS — Camera Calibration Toolbox."""
+"""MVIS: open-source multi-visual-inertial sensor calibration (camera and camera-IMU)."""
 
 __version__ = "0.1.0"

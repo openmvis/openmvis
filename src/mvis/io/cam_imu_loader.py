@@ -42,6 +42,7 @@ import numpy as np
 
 from mvis.io.image_decode import image_file_to_gray, ros_image_to_gray
 from mvis.io.imu_reader import euroc_imu_rows, ros1_imu_sample
+from mvis.io.rosbag_reader import open_bag
 from mvis.io.ros_stamp import header_stamp_s
 from mvis.io.capture_key import board_signature, capture_key
 from mvis.io.frame_detector import detect_frame, frames_to_arrays
@@ -116,7 +117,8 @@ def _sig(source, names, board, t0, window, min_obs) -> str:
 
 def load_ros1(bag_path, cam_topics, imu_topics, board, t0=0.0, window=1e9,
               min_obs=1, cache_dir=None, abs_window=None):
-    """Load a ROS1 bag on the HEADER clock (consistent cam+imu windowing).
+    """Load a ROS bag (ROS1 ``.bag``, or ROS2 folder / ``.db3`` / ``.mcap``, see
+    `io.rosbag_reader`) on the HEADER clock (consistent cam+imu windowing).
 
     cam_topics: list[str] image topics; imu_topics: list[str] (first = base).
     Returns (cams, imus): cams = [{topic,t_cam,ids_list,uv_list}], imus =
@@ -126,13 +128,10 @@ def load_ros1(bag_path, cam_topics, imu_topics, board, t0=0.0, window=1e9,
     abs_window: optional (lo, hi) absolute header-second override; when set,
     bypasses t0/window computation and uses the provided window directly.
     """
-    from rosbags.rosbag1 import Reader
-    from rosbags.typesys import Stores, get_typestore
-    ts = get_typestore(Stores.ROS1_NOETIC)
     cam_topics = list(cam_topics); imu_topics = list(imu_topics)
 
     # pass 1: earliest camera HEADER stamp -> window origin (header clock)
-    with Reader(bag_path) as r:
+    with open_bag(bag_path)[0] as r:
         cons = [c for c in r.connections if c.topic in set(cam_topics)]
         first = None
         for conn, _bt, raw in r.messages(connections=cons):
@@ -172,13 +171,14 @@ def load_ros1(bag_path, cam_topics, imu_topics, board, t0=0.0, window=1e9,
         read_by_cam = {c: 0 for c in range(len(cam_topics))}
         topic_to_cid = {tp: c for c, tp in enumerate(cam_topics)}
         jpeg_warned = set()
-        with Reader(bag_path) as r:
+        reader, deserialize = open_bag(bag_path)
+        with reader as r:
             cons = [c for c in r.connections if c.topic in set(cam_topics)]
             for conn, _bt, raw in r.messages(connections=cons):
                 t = header_stamp_s(raw, _bt)       # before decoding: skip out-of-window frames
                 if not (lo <= t <= hi):
                     continue
-                m = ts.deserialize_ros1(raw, conn.msgtype)
+                m = deserialize(raw, conn.msgtype)
                 cid = topic_to_cid[conn.topic]
                 img = ros_image_to_gray(m, conn.topic, jpeg_warned)
                 f = detect_frame(img, board, cid, t)
@@ -291,20 +291,18 @@ def _finalize_imu(d):
 
 
 def _ros1_imu(bag_path, imu_topics, window=None):
-    """IMU streams [{topic,name,t,w,a}] of a ROS1 bag on the header clock, sorted by stamp.
-    ``window=(lo, hi)`` keeps the samples within 0.5 s of it; None keeps the whole bag."""
-    from rosbags.rosbag1 import Reader
-    from rosbags.typesys import Stores, get_typestore
-    ts = get_typestore(Stores.ROS1_NOETIC)
+    """IMU streams [{topic,name,t,w,a}] of a ROS1 or ROS2 bag on the header clock, sorted by
+    stamp. ``window=(lo, hi)`` keeps the samples within 0.5 s of it; None keeps the whole bag."""
+    reader, deserialize = open_bag(bag_path)
     imus = {tp: dict(topic=tp, name=tp.strip("/").split("/")[0], t=[], w=[], a=[])
             for tp in imu_topics}
-    with Reader(bag_path) as r:
+    with reader as r:
         cons = [c for c in r.connections if c.topic in set(imu_topics)]
         for conn, _bt, raw in r.messages(connections=cons):
             t = header_stamp_s(raw, _bt)
             if window is not None and (t < window[0] - 0.5 or t > window[1] + 0.5):
                 continue
-            m = ts.deserialize_ros1(raw, conn.msgtype)
+            m = deserialize(raw, conn.msgtype)
             d = imus[conn.topic]
             d["t"].append(t)
             w, a = ros1_imu_sample(m)

@@ -267,6 +267,7 @@ class Optimizer:
         else:
             lm_noise = gtsam.noiseModel.Isotropic.Sigma(3, 1e-6)
         lm_keys = []
+        lm_n_obs = np.zeros(self._board.num_points(), int)   # vision factors per corner, as solved
         for pid in range(self._board.num_points()):
             lm_key = _sym("L", pid)
             pt = self._board.point_3d(pid)
@@ -482,6 +483,7 @@ class Optimizer:
                     fn_refs.append(fn_ref)
                     graph.add(factor)
                     n_total_obs += 1
+                    lm_n_obs[obs.point_id] += 1
 
         # -- Optimize --
         params = make_lm_params(
@@ -510,7 +512,7 @@ class Optimizer:
             result_values, graph, camera_ids, reference_camera,
             all_frames, all_board_poses, distortion_models, image_sizes,
             bp_timeline_t, bp_timeline_idx, bp_source_frame_indices,
-            bp_count, use_dt, is_single, snap_tol, factor_frames,
+            bp_count, use_dt, is_single, snap_tol, factor_frames, lm_n_obs,
         )
 
     # ==================================================================
@@ -575,6 +577,7 @@ class Optimizer:
         bp_count, use_dt, is_single,
         snap_tol: float = 0.0,
         factor_frames: dict | None = None,
+        lm_n_obs: np.ndarray | None = None,
     ) -> CalibrationResult:
         """Extract CalibrationResult from optimized values."""
 
@@ -791,6 +794,8 @@ class Optimizer:
             time_offsets=time_offsets,
             board_points_refined=board_points_refined,
             board_heights=board_heights_out,
+            board_height_n_obs=(lm_n_obs if board_heights_out is not None and lm_n_obs is not None
+                                else None),
             board_point_bias=np.column_stack(
                 [bias_sum / np.maximum(bias_n, 1)[:, None], bias_n]),
             factor_frames=factor_frames,

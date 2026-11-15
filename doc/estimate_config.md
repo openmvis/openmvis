@@ -68,6 +68,12 @@ mean plane and the heights hold only the shape. Each height has a weak zero-mean
 camera-only configs keep the default), so corners never observed stay at their start. The start is flat or `board.heights_file`, and the
 cam-IMU sidecar `<out>_board_shape.yaml` is a valid `heights_file`.
 
+**Every corner.** A camera-only solve with `board_points: true` keeps its `corner_subsample`
+(default `two_anti`) and warns: the corners it drops have no data and keep their start
+height. Set `corner_subsample: all` to estimate every corner; it is opt-in because the solve
+takes about 1.8x as long (ELP bag1: 12 to 22 min under the same load), as it doubles the
+observations.
+
 **One board only.** On cam-IMU, `board_points: true` with several boards, or in feature
 mode, raises `ValueError` (`estimate board heights: board mode with ONE board only`).
 

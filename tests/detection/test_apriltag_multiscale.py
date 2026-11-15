@@ -22,6 +22,8 @@ to the source image with cv2.resize's pixel-centre convention, and native
 Regression for the -0.375 px (4x) / -0.25 px (2x) bias of `corners / scale`
 found on 180-deg wide-FOV data.
 """
+from types import SimpleNamespace
+
 import cv2
 import numpy as np
 import pytest
@@ -75,12 +77,15 @@ def _render_aprilgrid(tag_px=40, gap_px=12, rows=8, cols=8, margin=60, k=8):
     return img, np.array(gt)
 
 
-def test_small_tag_board_corners_unbiased():
-    """Tags of 40 px (5 px modules) trigger the upscale pass; the detected
-    corners must be unbiased against the rendered ground truth."""
+def test_small_tag_board_corners_unbiased(monkeypatch):
+    """Tags of 40 px (5 px modules) trigger the upscale pass (with the native-
+    decodes skip off); the detected corners must be unbiased against the
+    rendered ground truth."""
+    monkeypatch.setattr(AprilTagBoard, "_UPSCALE_SKIP_MODULE_PX", None)
     img, gt = _render_aprilgrid()
     board = AprilTagBoard(rows=8, cols=8, tag_size=0.07, tag_spacing=0.3)
     obs = board.detect(img)
+    assert len(board._last_detection_history) > 1, "upscale pass must run"
     assert len(obs) >= 0.9 * 4 * 64
     px = np.array([o.pixel for o in obs])
     j = np.argmin(np.linalg.norm(px[:, None, :] - gt[None], axis=2), axis=1)
@@ -94,7 +99,9 @@ def test_tie_rule_depends_on_module_size(monkeypatch, tag_px, want_upscaled):
     """Frames whose tags have modules under _NATIVE_MIN_MODULE_PX keep the
     upscaled copy (native corners are the noisy ones there: TUM-VI 512, 2.4 px
     modules); frames of larger tags keep the native copy on a near-tie. Upscaled corners are
-    tagged with a +0.3 px shift so the winner is visible in the output."""
+    tagged with a +0.3 px shift so the winner is visible in the output. The
+    native-decodes skip is off so an upscaled copy exists to compete."""
+    monkeypatch.setattr(AprilTagBoard, "_UPSCALE_SKIP_MODULE_PX", None)
     real = AprilTagBoard._detect_at_scale
     native = []
 
@@ -109,9 +116,67 @@ def test_tie_rule_depends_on_module_size(monkeypatch, tag_px, want_upscaled):
 
     monkeypatch.setattr(AprilTagBoard, "_detect_at_scale", tagged)
     img, gt = _render_aprilgrid(tag_px=tag_px, gap_px=tag_px * 3 // 10)
-    obs = AprilTagBoard(rows=8, cols=8, tag_size=0.07, tag_spacing=0.3).detect(img)
+    board = AprilTagBoard(rows=8, cols=8, tag_size=0.07, tag_spacing=0.3)
+    obs = board.detect(img)
     assert native and native[0] >= 0.5 * 64, "native pass must see the tags"
+    assert len(board._last_detection_history) > 1, "upscale pass must run"
     px = np.array([o.pixel for o in obs])
     j = np.argmin(np.linalg.norm(px[:, None, :] - gt[None], axis=2), axis=1)
     bias = (px - gt[j]).mean(axis=0)
     assert np.allclose(bias, 0.3 if want_upscaled else 0.0, atol=0.05), bias
+
+
+# ---------- skip the upscale pass when the native pass decodes the board ----------
+
+def _scales_tried(board, img):
+    board.detect(img)
+    return [s for s, *_ in board._last_detection_history]
+
+
+def test_upscale_skipped_when_native_pass_decodes_the_board():
+    """4 px modules: below the 15 px comfort zone, but the native pass finds the
+    board, so no upscale pass runs (it used to: [1.0, ~6])."""
+    img, _ = _render_aprilgrid(tag_px=40, gap_px=12)
+    board = AprilTagBoard(rows=8, cols=8, tag_size=0.07, tag_spacing=0.3)
+    assert _scales_tried(board, img) == [1.0]
+    old = AprilTagBoard(rows=8, cols=8, tag_size=0.07, tag_spacing=0.3)
+    old._UPSCALE_SKIP_MODULE_PX = None                     # previous behaviour
+    assert len(_scales_tried(old, img)) > 1
+
+
+def test_upscale_kept_for_tags_too_small_to_trust_natively():
+    """2.4 px modules (under _NATIVE_MIN_MODULE_PX): the upscale still runs."""
+    img, _ = _render_aprilgrid(tag_px=24, gap_px=7)
+    board = AprilTagBoard(rows=8, cols=8, tag_size=0.07, tag_spacing=0.3)
+    assert len(_scales_tried(board, img)) > 1
+
+
+def _fake_dets(n, module_px, first_id=0):
+    side = module_px * AprilTagBoard._TAG_MODULES_PER_SIDE
+    return [SimpleNamespace(tag_id=first_id + i, corners=np.array(
+        [[300 + i, 300], [300 + i + side, 300], [300 + i + side, 300 + side], [300 + i, 300 + side]], float))
+        for i in range(n)]
+
+
+@pytest.mark.parametrize("n_found, module_px, want_upscale", [
+    (30, 6.0, False),    # 83 % found, decodable modules: skip
+    (36, 3.0, False),    # every tag found at the 3 px floor: skip
+    (20, 6.0, True),     # 56 % found (far/partly hidden board): keep upscaling
+    (30, 2.5, True),     # modules too small to trust natively: keep upscaling
+])
+def test_adaptive_extra_scales_skip_rule(n_found, module_px, want_upscale):
+    board = AprilTagBoard(rows=6, cols=6, tag_size=0.055, tag_spacing=0.3)
+    extras = board._adaptive_extra_scales(_fake_dets(n_found, module_px), {},
+                                          max_scale=4.0, min_scale=0.5,
+                                          image_shape=(1024, 1280))
+    assert any(s > 1.0 for s in extras) == want_upscale, extras
+
+
+def test_skip_rule_ignores_other_boards_tags():
+    """5 of this board's 36 tags plus 30 tags of another board in view: the
+    in-board rate is 14 %, so the upscale must still run."""
+    board = AprilTagBoard(rows=6, cols=6, tag_size=0.055, tag_spacing=0.3)
+    dets = _fake_dets(5, 6.0) + _fake_dets(30, 6.0, first_id=100)
+    extras = board._adaptive_extra_scales(dets, {}, max_scale=4.0, min_scale=0.5,
+                                          image_shape=(1024, 1280))
+    assert any(s > 1.0 for s in extras), extras

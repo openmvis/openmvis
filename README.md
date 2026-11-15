@@ -1,11 +1,12 @@
-# MVIS
+# OpenMVIS
 
-A Python toolbox for **camera** and **camera-IMU** calibration of single- and
-multi-sensor rigs, built on GTSAM factor graphs with native SO(3)/SE(3) Lie
-group support. OpenMVIS is the project, MVIS is the calibration toolbox, and
+**Open-source Multi-Visual-Inertial Sensor calibration.** A Python toolbox for
+**camera** and **camera-IMU** calibration, from a single camera to multi-camera,
+multi-IMU rigs, built on GTSAM factor graphs with native SO(3)/SE(3) Lie group
+support. OpenMVIS is the project, MVIS is the calibration toolbox, and
 `pymvis` is its Python package (import and CLI `mvis`).
 Website: [openmvis.com](https://openmvis.com) · datasets:
-[Calibench](https://huggingface.co/calibench-vi) · results on real recordings:
+[Calibench-VI](https://huggingface.co/calibench-vi) · results on real recordings:
 [openmvis.com](https://openmvis.com).
 
 ## Features
@@ -350,7 +351,7 @@ cameras:
 ### Other formats
 
 - **Timestamped images** (`source_type: timestamped_images`): image directory + CSV with `filename,timestamp` rows.
-- **ROS2 bag** (`source_type: ros2bag`): ROS2 SQLite-based bag directory; same image message types as ROS1.
+- **ROS2 bag** (`source_type: ros2bag`; cam-IMU `input.format: ros2`): the bag folder with its `metadata.yaml`, or one `.db3` / `.mcap` file; same image message types as ROS1. Read with `rosbags`, no ROS install.
 
 ### Calibration boards
 
@@ -378,7 +379,7 @@ src/mvis/
                 camera_projection.py, custom_projections.py: analytical Jacobians)
   simulation/   Synthetic cam-IMU data, digital twins, simulator examples
   recalib/      apply-calib and roundtrip (apply a calibration back onto a bag)
-  datasets/     Calibench catalog, download and conversion (`mvis datasets`)
+  datasets/     Calibench-VI catalog, download and conversion (`mvis datasets`)
   doctor/       `mvis check`, `mvis inspect`, `mvis verdict`
   mvisdb/       Capture database (detections, estimates, exports)
   analysis/     HTML reports, plotting, Rerun 3D viz, motion analysis

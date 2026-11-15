@@ -1114,3 +1114,44 @@ def plot_angular_velocity_timeline(
     fig.tight_layout()
     return fig
 
+
+def plot_board_shape(heights_m, board: Board, n_obs=None, title: str = "Board shape") -> Figure:
+    """Estimated out-of-plane height of every board corner, drawn at its place on the board (mm).
+
+    Diverging colours, symmetric about the flat plane; corners no camera saw are drawn hollow and
+    left out of the colour range and the statistics in the title.
+
+    Args:
+        heights_m: per-corner height (m), indexed like `board.all_points_3d()`.
+        board: Board object (corner positions in the board plane).
+        n_obs: optional per-corner observation counts; 0 marks an unseen corner.
+        title: Title prefix.
+
+    Returns:
+        Matplotlib Figure.
+    """
+    pts = np.asarray(board.all_points_3d(), float)
+    h = np.asarray(heights_m, float).ravel() * 1e3
+    if len(h) != len(pts):
+        raise ValueError(f"{len(h)} board heights for a board of {len(pts)} corners")
+    seen = np.ones(len(h), bool) if n_obs is None else np.asarray(n_obs).ravel() > 0
+    hs = h[seen]
+    lim = max(float(np.abs(hs).max()), 1e-3) if hs.size else 1.0
+    w, d = np.ptp(pts[:, 0]) or 1.0, np.ptp(pts[:, 1]) or 1.0
+    fig, ax = plt.subplots(figsize=(8, max(3.0, min(8.0, 6.5 * d / w + 1.2))))
+    size = 60 if len(pts) <= 200 else 24
+    sc = ax.scatter(pts[seen, 0], pts[seen, 1], c=hs, cmap="RdBu_r", vmin=-lim, vmax=lim, s=size,
+                    edgecolors="none")
+    if (~seen).any():
+        ax.scatter(pts[~seen, 0], pts[~seen, 1], s=size, facecolors="none", edgecolors="#999999",
+                   linewidths=0.8, label="not seen")
+        ax.legend(loc="upper right", fontsize=8, frameon=False)
+    fig.colorbar(sc, ax=ax, label="Height off the flat board (mm)", shrink=0.9)
+    ax.set_aspect("equal")
+    ax.set_xlabel("Board x (m)")
+    ax.set_ylabel("Board y (m)")
+    stats = (f"peak to peak {np.ptp(hs):.2f} mm, rms {np.std(hs):.2f} mm, {hs.size} corners seen"
+             if hs.size else "no corner seen")
+    ax.set_title(f"{title}\n{stats}", fontsize=10)
+    fig.tight_layout()
+    return fig

@@ -42,7 +42,7 @@ IMU_SAMPLE = 2000               # IMU messages read per topic for unit/stamp che
 GRAVITY = 9.80665
 MIN_DURATION_S = 30.0           # cam-IMU needs a long enough excitation window
 FORMAT_MODES = {"ros1": ["cam", "cam-imu"], "euroc": ["cam", "cam-imu"],
-                "ros2": ["cam"], "images": ["cam"]}
+                "ros2": ["cam", "cam-imu"], "images": ["cam"]}
 IMG_EXT = (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".pgm")
 
 
@@ -140,10 +140,10 @@ def _compressed_info(rep, topic, m):
 
 
 def inspect_ros1(path: str, rep: Report):
-    from rosbags.rosbag1 import Reader
-    from rosbags.typesys import Stores, get_typestore
-    ts = get_typestore(Stores.ROS1_NOETIC)
-    with Reader(path) as r:
+    """A ROS1 or ROS2 bag (`io.rosbag_reader`)."""
+    from mvis.io.rosbag_reader import open_bag
+    reader, deserialize = open_bag(path)
+    with reader as r:
         rep.duration_s = r.duration * 1e-9
         by_topic = {}
         for c in r.connections:
@@ -159,7 +159,7 @@ def inspect_ros1(path: str, rep: Report):
             limit = 2 if kind == "camera" else IMU_SAMPLE
             t, w, a = [], [], []
             for conn, bt, raw in r.messages(connections=conns):
-                m = ts.deserialize_ros1(raw, conn.msgtype)
+                m = deserialize(raw, conn.msgtype)
                 # the readers' clock: header stamp from the raw bytes, record time when it is 0
                 t.append(header_stamp_s(raw, bt))
                 if kind == "camera":
@@ -242,7 +242,7 @@ def _overlap_checks(rep: Report):
     imus = [s for s in rep.streams if s.kind == "imu"]
     if not cams:
         rep.find("data.cameras", "dataset", "fail", "no camera stream found")
-    if rep.format in ("ros1", "euroc") and not imus:
+    if rep.format in ("ros1", "ros2", "euroc") and not imus:
         rep.find("data.imus", "dataset", "warn", "no IMU stream: camera-only calibration only")
     if imus and rep.duration_s is not None and rep.duration_s < MIN_DURATION_S:
         rep.find("data.duration", "dataset", "warn",
@@ -255,15 +255,12 @@ def _overlap_checks(rep: Report):
             if off > 5.0:
                 rep.find("time.cam_imu_clock", f"{c.name}~{i.name}", "fail",
                          f"first stamps {off:.1f} s apart: different clocks?")
-    if rep.format == "ros2":
-        rep.find("format.cam_imu", "dataset", "warn",
-                 "ROS2/MCAP: camera-only works; cam-IMU needs ROS1 or EuRoC mav0 (convert first)")
 
 
 def inspect(path: str) -> Report:
     fmt = detect_format(path)
     rep = Report(path=os.path.abspath(path), format=fmt, supported_modes=FORMAT_MODES[fmt])
-    if fmt == "ros1":
+    if fmt in ("ros1", "ros2"):
         inspect_ros1(path, rep)
     elif fmt == "euroc":
         inspect_euroc(path, rep)

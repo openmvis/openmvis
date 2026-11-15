@@ -21,8 +21,6 @@ A real bag crashed the cam-IMU loader on msg.height. Since G6 every reader decod
 io.image_decode; every test still runs on all of them, so a reader that bypasses it shows.
 """
 import logging
-import sys
-import types
 
 import cv2
 import numpy as np
@@ -39,7 +37,6 @@ from mvis.io.data_loader import DataLoader
 from mvis.io.frame_detector import detect_frame
 from mvis.io.image_decode import ros_image_to_gray
 from mvis.io.ros1_bag_source import Ros1BagSource
-from mvis.io.ros2_bag_source import Ros2BagSource
 
 TS = get_typestore(Stores.ROS1_NOETIC)
 Header = TS.types["std_msgs/msg/Header"]
@@ -251,86 +248,6 @@ def test_16bit_colour_png_reads_like_raw_bgr16():
     png = ros_image_to_gray(compressed_msg(0, img, "bgr16; png compressed"), CAM, set())
     np.testing.assert_array_equal(png, ros_image_to_gray(raw_msg(0, img, "bgr16")))
     assert png.dtype == np.uint8 and png.shape == (H, W)
-
-
-@pytest.fixture
-def fake_ros2(monkeypatch):
-    """rosbag2_py and rclpy come from a ROS 2 install, so fake only those: the messages are real
-    CDR, and the SequentialReader replays them with the type table a bag would report. cv_bridge
-    is blocked: the reader decodes the message bytes itself (G6)."""
-    messages = []
-    types_by_topic = {}
-    cdr = get_typestore(Stores.ROS2_HUMBLE)
-
-    class Reader:
-        def open(self, *_):
-            self.queue = list(messages)
-
-        def set_filter(self, _):
-            pass
-
-        def get_all_topics_and_types(self):
-            return [types.SimpleNamespace(name=k, type=v) for k, v in types_by_topic.items()]
-
-        def has_next(self):
-            return bool(self.queue)
-
-        def read_next(self):
-            return self.queue.pop(0)
-
-    rb = types.SimpleNamespace(SequentialReader=Reader, StorageFilter=lambda topics: topics,
-                               StorageOptions=lambda **k: k, ConverterOptions=lambda **k: k)
-
-    def deserialize(data, cls):
-        return cdr.deserialize_cdr(data, cls.__msgtype__)
-
-    for name, mod in {
-        "rosbag2_py": rb,
-        "rclpy": types.SimpleNamespace(),
-        "rclpy.serialization": types.SimpleNamespace(deserialize_message=deserialize),
-        "sensor_msgs": types.SimpleNamespace(),
-        "sensor_msgs.msg": types.SimpleNamespace(Image=cdr.types["sensor_msgs/msg/Image"],
-                                                 CompressedImage=cdr.types["sensor_msgs/msg/CompressedImage"]),
-        "cv_bridge": None,                                  # import cv_bridge -> ImportError
-    }.items():
-        monkeypatch.setitem(sys.modules, name, mod)
-
-    def add(topic, msgtype, frame_msgs):
-        types_by_topic[topic] = msgtype
-        for i, m in enumerate(frame_msgs):
-            messages.append((topic, bytes(cdr.serialize_cdr(m, msgtype)), T0 + i * DT))
-    add.cdr = cdr
-    return add
-
-
-def _ros2_header(cdr, i):
-    t = T0 + i * DT
-    stamp = cdr.types["builtin_interfaces/msg/Time"](sec=t // 10**9, nanosec=t % 10**9)
-    return cdr.types["std_msgs/msg/Header"](stamp=stamp, frame_id="cam")
-
-
-def test_ros2_png_matches_raw_and_jpeg_warns(fake_ros2, caplog):
-    cdr = fake_ros2.cdr
-    Comp2, Img2 = cdr.types["sensor_msgs/msg/CompressedImage"], cdr.types["sensor_msgs/msg/Image"]
-    frames = _frames(2)
-    png = [Comp2(_ros2_header(cdr, i), "mono8; png compressed",
-                 cv2.imencode(".png", f)[1].reshape(-1)) for i, f in enumerate(frames)]
-    raw = [Img2(_ros2_header(cdr, i), H, W, "mono8", 0, W, np.frombuffer(f.tobytes(), np.uint8))
-           for i, f in enumerate(frames)]
-    jpg = [Comp2(_ros2_header(cdr, i), "jpeg", cv2.imencode(".jpg", f)[1].reshape(-1))
-           for i, f in enumerate(frames)]
-    fake_ros2("/png", Comp2.__msgtype__, png)
-    fake_ros2("/raw", Img2.__msgtype__, raw)
-    fake_ros2("/jpg", Comp2.__msgtype__, jpg)
-    with caplog.at_level(logging.WARNING, logger=JPEG_LOGGER):
-        got = list(Ros2BagSource("x", ["/png", "/raw", "/jpg"]))
-    by_cam = {c: [(img, t) for img, t, cid in got if cid == c] for c in range(3)}
-    for (p, t_p), (r, t_r) in zip(by_cam[0], by_cam[1]):
-        assert p.ndim == 2 and p.dtype == np.uint8 and t_p == t_r
-        np.testing.assert_array_equal(p, r)
-        assert r.ndim == 2 and r.dtype == np.uint8
-    assert by_cam[2][0][0].shape == (H, W)
-    assert len(caplog.records) == 1 and "/jpg" in caplog.records[0].getMessage()
 
 
 def test_inspect_reports_png_size_and_passes(tmp_path):

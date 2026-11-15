@@ -126,12 +126,17 @@ class OutputWriter:
         # and the per-corner mean-residual diagnostic (board-shape / detection bias)
         if getattr(result, "board_heights", None) is not None:
             h = np.asarray(result.board_heights, float)
+            n_obs = getattr(result, "board_height_n_obs", None)
+            seen = np.asarray(n_obs) > 0 if n_obs is not None else np.ones(len(h), bool)
+            hs = h[seen] if seen.any() else h
             data["board_shape"] = {
                 "model": "pose + per-corner height",
                 "heights_m": [float(v) for v in h],
-                "rms_mm": float(np.std(h) * 1e3),
-                "peak_to_peak_mm": float((h.max() - h.min()) * 1e3),
+                "rms_mm": float(np.std(hs) * 1e3),            # over the corners the solve saw
+                "peak_to_peak_mm": float((hs.max() - hs.min()) * 1e3),
             }
+            if n_obs is not None:
+                data["board_shape"]["n_obs"] = [int(v) for v in n_obs]
         if getattr(result, "board_point_bias", None) is not None:
             b = np.asarray(result.board_point_bias, float)
             seen = b[:, 2] > 0

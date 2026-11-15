@@ -406,7 +406,7 @@ class ReportStyle:
     # --- Branding ---
     brand_name: str = "OpenMVIS"
     version: str = "v0.1.0"
-    tagline: str = "Multi-camera calibration toolbox"
+    tagline: str = "Open-source multi-visual-inertial sensor calibration"
     author_name: str = "Yulin Yang"
     author_email: str = "contact@openmvis.com"
     author_url: str = "https://yangyulin.net"

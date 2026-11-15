@@ -217,6 +217,18 @@ class AprilTagBoard(Board):
     # Moderate coverage threshold: below this we try a 3rd adaptive scale.
     _MODERATE_DETECTION_RATE = 0.70
 
+    # Skip the upscale pass when the native pass already decodes the board:
+    # at least `_MODERATE_DETECTION_RATE` of the tags found AND every found
+    # tag's module (lower-median quad side / modules per side) >= this many px (the floor above which native corners are
+    # trusted over upscaled ones, `_NATIVE_MIN_MODULE_PX`). The tags the native
+    # pass misses there are mostly inside the found grid (occluded, blurred),
+    # not too small, and an upscale rarely recovers them. CyberStereo
+    # 1280x1024, 4-7 px modules, 44 frames/camera: 35-40 % less detector time
+    # per frame, 0.02-0.37 fewer tags per frame, identical corners for the
+    # tags found both ways. None restores the previous rule (upscale whenever
+    # a module is < `_MODULE_PX_MIN` or the rate is < `_EARLY_STOP_DETECTION_RATE`).
+    _UPSCALE_SKIP_MODULE_PX: float | None = _NATIVE_MIN_MODULE_PX
+
     def _auto_max_scale(self, gray: np.ndarray) -> float:
         """Pick max_scale based on image dimensions."""
         max_dim = max(gray.shape[:2])
@@ -243,7 +255,9 @@ class AprilTagBoard(Board):
         2. If detection rate ≥ 95% and module size in comfort zone,
            return immediately — single pass cost.
         3. Otherwise pick up to 3 adaptive extra scales:
-           - Upscale to bring smallest module to ~25 px.
+           - Upscale to bring smallest module to ~25 px, unless the native
+             pass already decodes the board (>= ``_MODERATE_DETECTION_RATE``
+             found and smallest module >= ``_UPSCALE_SKIP_MODULE_PX``).
            - Downscale to bring largest module from >50 px to ~25 px.
            - If still < 70% coverage, add an intermediate scale.
         4. If no tags were detected at scale=1.0, try Hail-Mary scales
@@ -398,8 +412,15 @@ class AprilTagBoard(Board):
         """Pick up to 3 extra scales based on what scale=1.0 found.
 
         Returns a list of scales (execution order). May be empty when
-        scale=1.0 gave comfortable coverage.
+        scale=1.0 gave comfortable coverage, or when the native pass already
+        decodes the board (see ``_UPSCALE_SKIP_MODULE_PX``).
+
+        Only detections whose id belongs to this board count towards the
+        rate and module sizes (tags of another board in view must not make
+        this one look decoded).
         """
+        dets_at_1 = [d for d in dets_at_1
+                     if 0 <= d.tag_id - self._start_id < self._num_tags]
         if not dets_at_1:
             return self._hail_mary_scales(max_scale)
 
@@ -462,8 +483,16 @@ class AprilTagBoard(Board):
 
         # ----- Normal adaptive scale selection -----
         extras: list[float] = []
+        native_decodes = (self._UPSCALE_SKIP_MODULE_PX is not None
+                          and rate >= self._MODERATE_DETECTION_RATE
+                          and smallest >= self._UPSCALE_SKIP_MODULE_PX)
+        # Skip upscale: the native pass already decodes the board.
+        if native_decodes:
+            logger.debug(
+                f"native pass decodes the board (rate={rate:.0%}, smallest "
+                f"module={smallest:.1f}px) — skipping upscale")
         # Upscale: bring smallest module into comfort zone.
-        if smallest < self._MODULE_PX_MIN or rate < self._EARLY_STOP_DETECTION_RATE:
+        elif smallest < self._MODULE_PX_MIN or rate < self._EARLY_STOP_DETECTION_RATE:
             s_up = self._MODULE_PX_TARGET / max(smallest, 1.0)
             s_up = min(s_up, max_scale)
             if s_up > 1.2:

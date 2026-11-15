@@ -90,8 +90,17 @@ def test_recovers_twisted_board(board):
     assert np.std(truth) > 1.5e-3                                # the twist is there to find
     assert np.sqrt(np.mean(err ** 2)) < 0.3e-3, f"height rms error {np.sqrt(np.mean(err**2))*1e3:.2f} mm"
     assert abs(np.mean(res.board_heights)) < 1e-5               # gauge: no mean plane in the heights
+    n_frames_seen = sum(any(o.point_id == pid for o in f.observations) for f in _frames(board, truth)
+                        for pid in [0])
+    assert res.board_height_n_obs is not None and res.board_height_n_obs.shape == (board.num_points(),)
+    assert res.board_height_n_obs[0] <= n_frames_seen and res.board_height_n_obs.min() > 0
     assert res.board_point_bias is not None and res.board_point_bias.shape == (board.num_points(), 3)
     assert np.median(np.hypot(res.board_point_bias[:, 0], res.board_point_bias[:, 1])) < 0.1
+
+
+def test_no_counts_without_board_heights(board):
+    res = _solve(board, _frames(board, np.zeros(board.num_points()), seed=7), heights_on=False)
+    assert res.board_heights is None and res.board_height_n_obs is None
 
 
 def test_flat_board_stays_flat(board):

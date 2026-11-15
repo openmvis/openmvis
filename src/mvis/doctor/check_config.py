@@ -66,7 +66,8 @@ def config_needs(path: str) -> set:
         needs.add("aruco")
     inp = raw.get("input") or {}
     cams = inp.get("cameras") or raw.get("cameras") or []
-    if inp.get("format") == "ros1" or any(c.get("source_type") == "rosbag_topic" for c in cams):
+    if inp.get("format") in ("ros1", "ros2") or any(
+            c.get("source_type") in ("rosbag_topic", "ros1bag", "ros2bag") for c in cams):
         needs.add("ros1")
     return needs
 
@@ -98,7 +99,7 @@ def check_env(needs=None, smoke: bool = False) -> list:
             importlib.import_module(mod)
             out.append(Finding(f"env.extra.{key}", mod, "pass", f"{mod} {_version(mod)}"))
         except ImportError:
-            what = {"apriltag": "AprilTag boards", "ros1": "ROS1 bags"}[key]
+            what = {"apriltag": "AprilTag boards", "ros1": "ROS1 and ROS2 bags"}[key]
             out.append(Finding(f"env.extra.{key}", mod, "fail" if key in needs else "warn",
                                f"{mod} not installed (needed for {what}): "
                                f"pip install 'pymvis[{extra}]'"))
@@ -298,9 +299,9 @@ def check_config(path: str) -> list:
     if mode == "cam-imu":
         ci, cin = cfg.input, cfg.camera_input
         _exists(out, "input.path", "input", ci.path, "dataset")
-        if ci.format not in ("ros1", "euroc"):
+        if ci.format not in ("ros1", "ros2", "euroc"):
             out.append(Finding("input.format", "input", "fail",
-                               f"cam-IMU input format {ci.format!r}: only ros1 or euroc"))
+                               f"cam-IMU input format {ci.format!r}: only ros1, ros2 or euroc"))
         if not ci.imu_topics:
             out.append(Finding("input.imu_topics", "input", "fail", "no imu_topics"))
         if not cin.path:

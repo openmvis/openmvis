@@ -324,6 +324,28 @@ def generate_html_report(
     sections.extend(_corner_accounting_rows(result))
     sections.append("</div>")
 
+    # ========== BOARD SHAPE (only when estimate.board_points was on) ==========
+    if getattr(result, "board_heights", None) is not None:
+        from mvis.analysis.plot_errors import plot_board_shape
+        h_mm = np.asarray(result.board_heights, float) * 1e3
+        # corners the solve never used (e.g. the two per tag dropped by two_anti) stay at the prior
+        n_obs = getattr(result, "board_height_n_obs", None)
+        seen = n_obs > 0 if n_obs is not None else np.ones(len(h_mm), bool)
+        h_seen = h_mm[seen] if seen.any() else h_mm
+        sn = next_sec()
+        toc_entries.append(("sec-board-shape", f"{sn}. Board Shape"))
+        sections.append(
+            f'{sec_div("sec-board-shape")}<h2>{sn}. Board Shape</h2>'
+            "<p>Per-corner height off the flat board, estimated with the cameras "
+            "(<code>estimate.board_points</code>). The mean plane and tilt belong to the board "
+            "pose, so a flat board shows only noise here.</p>"
+            "<table><tr><th>Metric</th><th>Value</th></tr>"
+            f"<tr><td>Peak to peak</td><td class='num'>{np.ptp(h_seen):.2f} mm</td></tr>"
+            f"<tr><td>RMS</td><td class='num'>{np.std(h_seen):.2f} mm</td></tr>"
+            f"<tr><td>Corners seen</td><td class='num'>{int(seen.sum())} of {len(h_mm)}</td></tr></table>"
+            f'<div class="plot-container"><img src="data:image/png;base64,'
+            f'{fig_b64(plot_board_shape(result.board_heights, board, n_obs))}"></div></div>')
+
     # ========== CAMERA EXTRINSICS ==========
     if result.extrinsics:
         sn = next_sec()

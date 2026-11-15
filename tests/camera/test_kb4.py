@@ -621,3 +621,20 @@ def test_enum_and_schema_list_every_model():
     sql = files("mvis.mvisdb").joinpath("schema.sql").read_text()
     for m in cm.MODELS:
         assert f"'{m}'" in sql
+
+
+def test_kalibr_camchain_names_the_topic_the_camera_was_read_from(tmp_path):
+    """A one-camera run on the second camera's topic (Hilti-Trimble 2026 cam1_imu) keeps key cam0,
+    as Kalibr numbers cameras, but its rostopic is /cam1/..., not a made-up /cam0/image_raw."""
+    from mvis.io.cam_imu_output import to_kalibr_camchain_imucam, write_cam_imu_calibration
+    cal = CameraCalib(gtsam.Pose3(), 0.001, 0.0, NOFOLD, model="kb4")
+    r = SimpleNamespace(cameras=[dict(calib=cal, reproj_rms_px=0.1, image_size=(1024, 1024))],
+                        calib=cal, imus=[], b_g=np.zeros(3), b_a=np.zeros(3),
+                        imu_intr_xi=None, diagnostics={}, ok=True)
+    topic = "/cam1/image_raw/compressed"
+    chain = tmp_path / "chain.yaml"
+    write_cam_imu_calibration(r, str(tmp_path / "r_calib.yaml"), kalibr_path=str(chain),
+                              cam_topics=[topic], imu_topics=["/imu/data_raw"])
+    c = yaml.safe_load(chain.read_text())
+    assert list(c) == ["cam0"] and c["cam0"]["rostopic"] == topic
+    assert to_kalibr_camchain_imucam(r)["cam0"]["rostopic"] == "/cam0/image_raw"     # no topics: as before

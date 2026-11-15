@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use MVIS, please cite the software and the MVIS paper."
-title: "MVIS: camera and camera-IMU calibration toolbox"
+title: "OpenMVIS: open-source multi-visual-inertial sensor calibration"
 type: software
 authors:
   - family-names: Yang

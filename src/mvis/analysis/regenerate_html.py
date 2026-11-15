@@ -96,6 +96,9 @@ def _apply_stored_board_shape(result, yaml_path: Path, board) -> bool:
     pts[:, 2] += np.asarray(heights, dtype=np.float64)
     result.board_points_refined = pts
     result.board_heights = np.asarray(heights, dtype=np.float64)
+    n_obs = (doc.get("board_shape") or {}).get("n_obs")            # absent before 2026-11-12
+    result.board_height_n_obs = (np.asarray(n_obs, int) if n_obs is not None and len(n_obs) == len(heights)
+                                 else None)
     return True
 
 
