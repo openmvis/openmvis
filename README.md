@@ -547,6 +547,8 @@ et al. 2013/2015) and [Basalt](https://gitlab.com/VladyslavUsenko/basalt)
 
 ## Citation
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24239182.svg)](https://doi.org/10.5281/zenodo.24239182)
+
 If you use MVIS, please cite the MVIS paper (see `CITATION.cff`):
 
 ```bibtex
@@ -561,6 +563,22 @@ If you use MVIS, please cite the MVIS paper (see `CITATION.cff`):
   doi     = {10.1177/02783649241245726}
 }
 ```
+
+and the project, by its Zenodo concept DOI (resolves to the latest release; each release also
+has a version DOI, `10.5281/zenodo.24239183` for v0.1.0):
+
+```bibtex
+@misc{openmvis,
+  title  = {{OpenMVIS}: open-source multi-visual-inertial sensor calibration},
+  author = {{OpenMVIS Contributors}},
+  year   = {2026},
+  doi    = {10.5281/zenodo.24239182},
+  url    = {https://openmvis.com}
+}
+```
+
+If your results depend on the Calibench-VI datasets, cite them too; the entries are on
+[openmvis.com/about/contributors](https://openmvis.com/about/contributors/#citing-the-datasets-cite-calibench-vi).
 
 ## Contributing
 
