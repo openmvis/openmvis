@@ -160,6 +160,8 @@ def _result_from_yaml(path: Path) -> CalibrationResult:
             p95=float(er.get("p95", 0)),
             max=float(er.get("max", 0)),
             num_observations=int(er.get("num_observations", 0)),
+            std=float(er.get("std", 0)),
+            inlier=er.get("inlier"),
         ))
 
     result = CalibrationResult(
@@ -261,6 +263,17 @@ def _load_thumbnails(thumb_dir: Path) -> dict[int, list[np.ndarray]]:
                 imgs.append(img)
         out[cid] = imgs
     return out
+
+
+def _camera_sources(config_path) -> dict:
+    """camera id -> {"source_path"} from the run config's input.cameras; {} when unreadable."""
+    try:
+        import yaml
+        cfg = yaml.safe_load(open(config_path)) or {}
+        return {int(c.get("camera_id", i)): {"source_path": c.get("source_path", "")}
+                for i, c in enumerate((cfg.get("input") or {}).get("cameras") or [])}
+    except Exception:
+        return {}
 
 
 def _make_title(run_id: str, config_path: Path | None) -> str:
@@ -428,6 +441,7 @@ def regenerate_one(out_dir: Path, config_path: Path | None = None,
         "calibration_yaml_path": str(yaml_path),
         "result_files": [str(p) for p in sorted(
             {Path(yaml_path), *out_dir.glob("*_calib.yaml")})],
+        "cameras_info": _camera_sources(config_path_found),   # names the recording in the report title
     }
 
     n_ok = 0

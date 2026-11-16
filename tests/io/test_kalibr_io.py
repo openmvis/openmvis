@@ -293,3 +293,13 @@ def test_parse_kalibr_camchain_edge_cases_follow_read_camchain():
         parse_kalibr_camchain({"cam0": {**pin, "distortion_model": "none", "distortion_coeffs": []}})
     out = parse_kalibr_camchain({"cam0": {**pin, "distortion_model": "radtan"}})[0]
     assert out["intrinsics"] == [400., 401., 320., 240.] and out["distortion"] == [0., 0., 0., 0.]
+
+
+def test_parse_results_reads_kalibrs_per_camera_std(tmp_path):
+    """Kalibr prints `mean X, median Y, std: Z` on one line (CyperStereo, 2026-11-15)."""
+    p = tmp_path / "r-results-imucam.txt"
+    p.write_text("Reprojection error (cam3) [px]:     mean 0.5813352712000105, median 0.5462887753991873, "
+                 "std: 0.284367697748364\n")
+    cam = parse_results(str(p))["cams"]["cam3"]
+    assert cam == {"reproj_mean": 0.5813352712000105, "reproj_median": 0.5462887753991873,
+                   "reproj_std": 0.284367697748364}

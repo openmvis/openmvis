@@ -66,55 +66,41 @@ The validation behind these claims is on
 
 ## MVIS vs Kalibr vs Basalt
 
-✅ supported · ❌ not supported
-
-| Feature | MVIS | Kalibr | Basalt |
-|---|:---:|:---:|:---:|
-| **Install and platforms** | | | |
-| `pip install` | ✅ | ❌ | ❌ |
-| No ROS needed | ✅ | ❌ | ✅ |
-| Linux | ✅ | ✅ | ✅ |
-| macOS | ✅ | ❌ | ✅ |
-| Windows (tentative) | ✅ | ❌ | ❌ |
-| **Inputs** | | | |
-| ROS 1 bags | ✅ | ✅ | ✅ |
-| ROS 2 bags | ✅ | ❌ | ❌ |
-| EuRoC folders | ✅ | ❌ | ✅ |
-| Image folders | ✅ | ❌ | ❌ |
-| **Boards** | | | |
-| AprilGrid | ✅ | ✅ | ✅ |
-| ArUco | ✅ | ❌ | ❌ |
-| Chessboard | ✅ | ✅ | ❌ |
-| Circle grid | ❌ | ✅ | ❌ |
-| **Camera models** | | | |
-| RadTan | ✅ | ✅ | ❌ |
-| Equidistant / KB4 | ✅ | ✅ | ✅ |
-| FOV | ✅ | ✅ | ❌ |
-| Double Sphere (DS) | ✅ | ✅ | ✅ |
-| EUCM | ✅ | ✅ | ✅ |
-| UCM | ✅ | ❌ | ✅ |
-| Omni + RadTan | ✅ | ✅ | ❌ |
-| **Cameras** | | | |
-| More than two cameras | ✅ | ✅ | ❌ |
-| Cameras without shared view | ✅ | ❌ | ❌ |
-| Rolling shutter, one camera | ✅ | ✅ | ❌ |
-| Rolling shutter, joint readout across cameras | ✅ | ❌ | ❌ |
-| **Time and IMU** | | | |
-| Camera–IMU time offset | ✅ | ✅ | ✅ |
-| Camera–camera time offset | ✅ | ❌ | ❌ |
-| IMU intrinsics (scale, misalignment) | ✅ | ❌ | ✅ |
-| Gyro–accel time offset (t_ga) | ✅ | ❌ | ❌ |
-| **Output** | | | |
-| Self-contained HTML report | ✅ | ❌ | ❌ |
+| Capability | MVIS | Kalibr | Basalt |
+|---|---|---|---|
+| Camera intrinsics + distortion | ✅ | ✅ | ✅ |
+| Distortion models | radtan, kb4, equidistant, FOV, DS, EUCM, UCM, omni_radtan (experimental) | radtan, equidistant, FOV, omni, omni-radtan, DS, EUCM | radtan, KB4, DS, EUCM, UCM |
+| Different models in one rig | ✅ | ✅ | ✅ |
+| Camera–IMU extrinsics + time offset | ✅ | ✅ | ✅ |
+| Multiple IMUs in one solve | ✅ | ✅ | ✖ one IMU per run |
+| Gyro-only mode per auxiliary IMU | ✅ | ✖ | ✖ |
+| IMU intrinsics (scale, misalignment) | ✅ three conventions (kalibr, rpng, calyx) | ✅ | ✅ scale + misalignment |
+| G-sensitivity Tg | ✅ | ✅ | ✖ |
+| Gyro–accel offset t_ga | ✅ on by default | ✖ | ✖ |
+| Board shape (one height per corner) | ✅ `estimate.board_points` | ✖ flat board | ✖ flat board |
+| KB4-type polynomial past 90° | ✅ `kb4`, what `fisheye` means | ✖ pinhole-equi needs rays in front of the camera | ✅ KB4 |
+| Rolling-shutter readout | ✅ in camera and camera–IMU solves | camera-only, separate tool | ✖ |
+| Global + rolling shutter + IMUs in one solve | ✅ readout per camera | ✖ | ✖ |
+| Corrected-dataset export | ✅ `apply-calib` | ✖ | ✖ |
+| Digital-twin simulation | ✅ `mvis.simulation` | ✖ | ✖ |
+| Round-trip PASS/FAIL validation | ✅ `roundtrip` | ✖ | ✖ |
+| Batch sweep over a dataset family | ✅ `input.bags` | ✖ | ✖ |
+| Dataset download + check | ✅ `mvis datasets` | ✖ | ✖ |
+| Trajectory model | discrete factor graph | continuous-time B-spline | continuous-time B-spline |
+| Boards | AprilGrid, chessboard, ArUco | AprilGrid, chessboard, circles | AprilGrid |
+| Input | ROS1/ROS2 bag, EuRoC, image folders | ROS bag | ROS bag, EuRoC |
+| Runs without ROS | ✅ pure Python | ✖ | ✅ C++ build, no ROS |
+| Platforms | Linux, macOS, Windows (tentative) (Python 3.11–3.12) | Linux (ROS 1, or Docker) | Linux, macOS |
+| Kalibr interop | ✅ read + write camchain, read AprilGrid targets | native | ✖ |
 
 How each tool works:
 
 | | MVIS | Kalibr | Basalt |
 |---|---|---|---|
-| **Optimizer** | GTSAM factor graph (LM) | Custom `aslam_optimizer` | Custom LM + Gauss-Newton |
-| **Trajectory** | Per-frame pose + SLERP | B-spline (order 6) | B-spline SE(3) (order 5) |
-| **Outlier rejection** | Two passes: P99, then a warm-start rerun | One pass, Blake-Zisserman | One pass, Huber |
-| **Output files** | YAML + HTML report | YAML + TXT + PDF | JSON (cereal) |
+| Optimizer | GTSAM factor graph (LM) | Custom `aslam_optimizer` | Custom LM + Gauss-Newton |
+| Trajectory | Per-frame pose + SLERP | B-spline (order 6) | B-spline SE(3) (order 5) |
+| Outlier rejection | Two passes: P99, then a warm-start rerun | One pass, Blake-Zisserman | One pass, Huber |
+| Output files | YAML + HTML report | YAML + TXT + PDF | JSON (cereal) |
 
 Measured side by side on the same public recordings, every parameter as
 median ± sd across recordings:

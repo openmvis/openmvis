@@ -816,7 +816,7 @@ class Optimizer:
 
     def _errors_to_stats(self, errors: list[float], cam_id: int) -> ReprojectionErrorStats:
         # shared Kalibr-convention stats — same code path as the cam-IMU pipeline
-        from mvis.calibration.reproj_stats import corner_stats
+        from mvis.calibration.reproj_stats import corner_stats, inlier_stats
         if not errors:
             return ReprojectionErrorStats(
                 camera_id=cam_id, rms=0.0, mean=0.0, median=0.0,
@@ -825,7 +825,8 @@ class Optimizer:
         return ReprojectionErrorStats(
             camera_id=cam_id, rms=s['rms'], mean=s['mean'], median=s['median'],
             p90=s['p90'], p95=s['p95'], max=s['max'],
-            num_observations=s['n_corners'],
+            num_observations=s['n_corners'], std=s['std'],
+            inlier=inlier_stats(errors, getattr(getattr(self, '_options', None), 'pixel_sigma', 1.0)),
         )
 
 

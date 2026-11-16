@@ -61,7 +61,7 @@ def plot_frame_tag_heatmap(
 
     ax.set_xlabel("Tag ID")
     ax.set_ylabel("Frame Index")
-    ax.set_title(f"Camera {camera_id} — Per-Frame Per-Tag Error")
+    ax.set_title(f"cam{camera_id} — Per-Frame Per-Tag Error")
     fig.tight_layout()
     return fig
 
@@ -98,7 +98,7 @@ def plot_detection_rate_per_tag(
 
     ax.set_xlabel(f"{unit} ID")
     ax.set_ylabel("Detection Count")
-    ax.set_title(f"Camera {camera_id} — Detections Per {unit}")
+    ax.set_title(f"cam{camera_id} — Detections Per {unit}")
     ax.grid(True, alpha=0.3, axis="y")
     fig.tight_layout()
     return fig
@@ -131,7 +131,7 @@ def plot_per_frame_rms(
 
     ax.set_xlabel("Frame Index")
     ax.set_ylabel("RMS Error (px)")
-    ax.set_title(f"Camera {camera_id} — Per-Frame Reprojection RMS")
+    ax.set_title(f"cam{camera_id} — Per-Frame Reprojection RMS")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     return fig
@@ -179,7 +179,7 @@ def plot_per_frame_robust(
 
     ax.set_xlabel("Frame Index")
     ax.set_ylabel("Error (px)")
-    ax.set_title(f"Camera {camera_id} — Per-Frame Error (Median & 95th Pct)")
+    ax.set_title(f"cam{camera_id} — Per-Frame Error (Median & 95th Pct)")
     ax.legend(fontsize=9, loc="upper right")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -216,7 +216,7 @@ def plot_error_histogram(
 
     ax.set_xlabel("Reprojection Error (px)")
     ax.set_ylabel("Count")
-    ax.set_title(f"Camera {camera_id} — Error Distribution ({len(errors)} observations)")
+    ax.set_title(f"cam{camera_id} — Error Distribution ({len(errors)} observations)")
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -365,7 +365,7 @@ def plot_error_histogram_uv(
 
     ax_u.set_ylabel("Count")
     fig.suptitle(
-        f"Camera {camera_id} — u/v Residual Distribution ({len(ev)} obs) "
+        f"cam{camera_id} — u/v Residual Distribution ({len(ev)} obs) "
         f"— zoomed to ±{lim:.2f} px "
         f"({n_out} obs outside range)"
     )
@@ -413,7 +413,7 @@ def plot_corner_heatmap(
 
     ax.set_xlabel("Board Column")
     ax.set_ylabel("Board Row")
-    ax.set_title(f"Camera {camera_id} — Corner Error Heatmap")
+    ax.set_title(f"cam{camera_id} — Corner Error Heatmap")
     fig.tight_layout()
     return fig
 
@@ -551,7 +551,7 @@ def plot_error_vectors_dual(
                 + (f" ({n_out} outside)" if n_out > 0 else ""))
     ax_zoom.set_title(subtitle, fontsize=10)
 
-    fig.suptitle(f"Camera {camera_id} — Error Vectors",
+    fig.suptitle(f"cam{camera_id} — Error Vectors",
                  fontsize=12, y=1.00)
     fig.tight_layout()
     return fig
@@ -573,7 +573,7 @@ def plot_reprojection_scatter(
                     if len(v))
     fig, ax = plt.subplots(figsize=(7.5, 6.2))
     if not frames:
-        ax.set_title(f"Camera {camera_id} — reprojection errors (no data)")
+        ax.set_title(f"cam{camera_id} — reprojection errors (no data)")
         return fig
     pts = np.vstack([v for _, v in frames])
     idx = np.concatenate([np.full(len(v), f) for f, v in frames])
@@ -596,7 +596,7 @@ def plot_reprojection_scatter(
     ax.set_ylabel("error y (px)")
     fig.colorbar(sc, ax=ax, label="image index")
     ax.legend(fontsize=8, loc="upper right")
-    ax.set_title(f"Camera {camera_id} — reprojection errors"
+    ax.set_title(f"cam{camera_id} — reprojection errors"
                  + (f" ({n_out:,} outside the axes)" if n_out else ""), fontsize=11)
     fig.tight_layout()
     return fig
@@ -608,20 +608,18 @@ def plot_error_per_tag_robust(
     camera_id: int = 0,
     is_chessboard: bool = False,
 ) -> Figure:
-    """Per-tag/corner median + 95th-percentile error bars.
+    """Per-tag/corner median and 95th-percentile error in ONE panel.
 
-    Two stacked subplots sharing the tag/corner-ID x-axis:
-      top    — median error per tag/corner (px)
-      bottom — 95th-percentile error per tag/corner (px)
-
-    Bars tinted red when the value exceeds 1.5× the robust mean of
-    that metric (flags tags/corners with anomalous error).
+    Each tag/corner ID gets a wide light bar for its P95 and a narrow dark bar for its median
+    drawn over it. A bar turns red when its value exceeds 1.5x that metric's mean over the
+    tags/corners with data (flags tags/corners with anomalous error); each metric's mean is a
+    dashed line in its own colour.
     """
     unit = "Corner" if is_chessboard else "Tag"
-    tag_ids = list(range(num_tags))
+    tag_ids = np.arange(num_tags)
     med_vals, p95_vals = [], []
     for tid in tag_ids:
-        errs = np.asarray(tag_errors.get(tid, []), dtype=np.float64)
+        errs = np.asarray(tag_errors.get(int(tid), []), dtype=np.float64)
         if errs.size:
             med_vals.append(float(np.median(errs)))
             p95_vals.append(float(np.percentile(errs, 95)))
@@ -629,26 +627,23 @@ def plot_error_per_tag_robust(
             med_vals.append(0.0)
             p95_vals.append(0.0)
 
-    fig, (ax_med, ax_p95) = plt.subplots(
-        2, 1, figsize=(max(8, num_tags * 0.3), 5.5), sharex=True)
+    fig, ax = plt.subplots(figsize=(max(8, num_tags * 0.3), 3.6))
 
-    def _bar(ax, vals, label, color_hi="#F44336", color_lo="#2196F3"):
+    def _bars(vals, label, width, lo, hi, line):
         nonzero = [v for v in vals if v > 0]
         ref = float(np.mean(nonzero)) if nonzero else 0.0
-        colors = [color_hi if v > ref * 1.5 else color_lo for v in vals]
-        ax.bar(tag_ids, vals, color=colors, edgecolor="white", width=0.8)
+        colors = [hi if v > ref * 1.5 else lo for v in vals]
+        ax.bar(tag_ids, vals, color=colors, edgecolor="white", width=width, label=label)
         if ref > 0:
-            ax.axhline(ref, color="#FF9800", linestyle="--", linewidth=1,
-                       label=f"Mean = {ref:.3f} px")
-            ax.legend(fontsize=9, loc="upper right")
-        ax.set_ylabel(f"{label} (px)")
-        ax.grid(True, alpha=0.3, axis="y")
+            ax.axhline(ref, color=line, linestyle="--", linewidth=1, label=f"{label} mean = {ref:.3f} px")
 
-    _bar(ax_med, med_vals, "Median")
-    _bar(ax_p95, p95_vals, "P95")
-    ax_p95.set_xlabel(f"{unit} ID")
-    fig.suptitle(f"Camera {camera_id} — Per-{unit} Error (Median / P95)",
-                 fontsize=11)
+    _bars(p95_vals, "P95", 0.8, "#BBDEFB", "#FFCDD2", "#64B5F6")
+    _bars(med_vals, "Median", 0.45, "#1565C0", "#D32F2F", "#FF9800")
+    ax.set_xlabel(f"{unit} ID")
+    ax.set_ylabel("Error (px)")
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.legend(fontsize=9, loc="lower right", bbox_to_anchor=(1.0, 1.0), ncol=4, borderaxespad=0.2)
+    ax.set_title(f"cam{camera_id} — Per-{unit} Error (Median over P95)", fontsize=11, loc="left")
     fig.tight_layout()
     return fig
 
@@ -686,7 +681,7 @@ def plot_tag_tracking_history(
                interpolation="nearest", vmin=0, vmax=1)
     ax.set_xlabel("Frame index")
     ax.set_ylabel(f"{unit} ID")
-    ax.set_title(f"Camera {camera_id} — {unit} tracking history "
+    ax.set_title(f"cam{camera_id} — {unit} tracking history "
                  f"(black = detected, white = missed)")
 
     # Label left y-axis by tag id.
@@ -810,7 +805,7 @@ def plot_feature_coverage_multi(
                     transform=ax.transAxes, fontsize=14, color="red")
             ax.set_xlim(0, w)
             ax.set_ylim(h, 0)
-            ax.set_title(f"Camera {cam_id}")
+            ax.set_title(f"cam{cam_id}")
             continue
 
         us = np.array(us)
@@ -851,7 +846,7 @@ def plot_feature_coverage_multi(
 
         n_pts = len(us)
         n_frames = len(frames)
-        ax.set_title(f"Camera {cam_id} — {n_pts:,} pts, "
+        ax.set_title(f"cam{cam_id} — {n_pts:,} pts, "
                      f"{n_frames} frames\n"
                      f"cell coverage: {cell_coverage:.0f}%, "
                      f"hull coverage: {hull_coverage_pct:.0f}%")
@@ -948,7 +943,7 @@ def plot_detection_accumulation(
         ax.set_ylim(h, 0)
         ax.set_xlabel("u (px)")
         ax.set_ylabel("v (px)")
-        ax.set_title(f"Camera {cam_id} — {n_pts:,} detections, "
+        ax.set_title(f"cam{cam_id} — {n_pts:,} detections, "
                      f"{len(frames)} frames")
         ax.set_aspect("equal")
 

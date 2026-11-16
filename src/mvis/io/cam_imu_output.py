@@ -117,6 +117,9 @@ def _cam_block(c, cal, e, topic=None):
         td=float(cal.td),
         T_cam_imu=_T_cam_imu(cal),
         reproj_rms_px=round(float(e.get("reproj_rms_px", float("nan"))), 4),
+        **{k: round(float(e[k]), 4) for k in ("reproj_mean_px", "reproj_median_px", "reproj_std_px", "reproj_p90_px",
+                                                  "reproj_p95_px", "reproj_max_px")
+           if e.get(k) is not None},
         p_CtoC0_m=([float(v) for v in np.asarray(e["T_CtoC0"].translation(), float)]
                    if "T_CtoC0" in e else None),
     )

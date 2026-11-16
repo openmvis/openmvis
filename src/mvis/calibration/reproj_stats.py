@@ -33,15 +33,20 @@ from __future__ import annotations
 import numpy as np
 
 _EMPTY = dict(rms=float("nan"), mean=float("nan"), median=float("nan"),
-              p90=float("nan"), p95=float("nan"), max=float("nan"),
+              std=float("nan"), p90=float("nan"), p95=float("nan"), max=float("nan"),
               n_corners=0)
+
+# Corners within INLIER_SIGMAS x the solve's pixel sigma count as inliers for the
+# second, Kalibr-comparable population (Kalibr reports after its own outlier removal).
+INLIER_SIGMAS = 3.0
 
 
 def corner_stats(norms) -> dict:
     """Statistics over pooled per-corner error norms (px).
 
     norms: array-like of per-corner Euclidean norms; NaN entries are excluded.
-    Returns {rms, mean, median, p90, p95, max, n_corners}.
+    Returns {rms, mean, median, std, p90, p95, max, n_corners}. std is the population
+    std (ddof 0), as Kalibr prints it.
     """
     a = np.asarray(norms, float).ravel()
     a = a[np.isfinite(a)]
@@ -51,8 +56,32 @@ def corner_stats(norms) -> dict:
         rms=float(np.sqrt(np.mean(a ** 2))),
         mean=float(np.mean(a)),
         median=float(np.median(a)),
+        std=float(np.std(a)),
         p90=float(np.percentile(a, 90)),
         p95=float(np.percentile(a, 95)),
         max=float(np.max(a)),
         n_corners=int(a.size),
     )
+
+
+def inlier_stats(norms, sigma_px: float, k: float = INLIER_SIGMAS) -> dict:
+    """corner_stats over the corners within k * sigma_px, plus the threshold and how many
+    finite corners it left out. The fixed, stated threshold makes the number reproducible;
+    it stands in for Kalibr's outlier removal, which depends on its own batches."""
+    a = np.asarray(norms, float).ravel()
+    a = a[np.isfinite(a)]
+    thr = float(k * sigma_px)
+    s = corner_stats(a[a <= thr])
+    s.update(threshold_px=thr, n_excluded=int(np.sum(a > thr)))
+    return s
+
+
+def reproj_entry(norms, sigma_px: float) -> dict:
+    """The reprojection fields of a cam-IMU per-camera entry or of its overall diagnostics:
+    reproj_{rms,mean,median,std,p90,p95,max}_px and reproj_n_corners over all corners, and
+    reproj_inlier (inlier_stats). One builder for every pipeline that writes them."""
+    s = corner_stats(norms)
+    out = {f"reproj_{k}_px": s[k] for k in ("rms", "mean", "median", "std", "p90", "p95", "max")}
+    out["reproj_n_corners"] = s["n_corners"]
+    out["reproj_inlier"] = inlier_stats(norms, sigma_px)
+    return out

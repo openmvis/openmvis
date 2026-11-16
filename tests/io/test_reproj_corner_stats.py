@@ -142,6 +142,38 @@ def test_cam_only_stats_match_shared_helper():
     assert (st.rms, st.mean, st.median, st.p90, st.p95, st.max) == \
         (s["rms"], s["mean"], s["median"], s["p90"], s["p95"], s["max"])
     assert st.num_observations == s["n_corners"]
+    assert st.std == s["std"] and st.inlier["n_corners"] == 16 and st.inlier["n_excluded"] == 0
+
+
+def test_corner_stats_std_is_kalibrs_population_std():
+    from mvis.calibration.reproj_stats import corner_stats
+    pool = np.array([0.5] * 12 + [1.0] * 4)
+    s = corner_stats(np.append(pool, np.nan))
+    assert s["std"] == pytest.approx(np.std(pool)) and s["std"] != pytest.approx(np.std(pool, ddof=1))
+    assert np.isnan(corner_stats([])["std"])
+
+
+def test_inlier_stats_drop_corners_over_k_sigma_and_count_them():
+    from mvis.calibration.reproj_stats import INLIER_SIGMAS, corner_stats, inlier_stats
+    norms = np.array([0.2, 0.4, 0.6, 2.9, 3.0, 3.1, 25.0, np.nan])
+    s = inlier_stats(norms, sigma_px=1.0)
+    keep = np.array([0.2, 0.4, 0.6, 2.9, 3.0])            # threshold inclusive
+    assert INLIER_SIGMAS == 3.0 and s["threshold_px"] == 3.0
+    assert s["n_corners"] == 5 and s["n_excluded"] == 2     # NaN is neither
+    assert s["mean"] == pytest.approx(keep.mean()) and s["std"] == pytest.approx(keep.std())
+    assert inlier_stats(norms, sigma_px=0.5)["n_excluded"] == 4
+    assert s["median"] == corner_stats(keep)["median"]
+
+
+def test_reproj_entry_holds_the_cam_imu_fields():
+    from mvis.calibration.reproj_stats import corner_stats, reproj_entry
+    norms = np.array([0.1, 0.2, 0.3, 10.0])
+    e = reproj_entry(norms, 1.0)
+    s = corner_stats(norms)
+    ks = ("rms", "mean", "median", "std", "p90", "p95", "max")
+    assert [e[f"reproj_{k}_px"] for k in ks] == [s[k] for k in ks]
+    assert e["reproj_inlier"]["max"] == 0.3 and e["reproj_inlier"]["p95"] == pytest.approx(np.percentile([0.1, 0.2, 0.3], 95))
+    assert e["reproj_n_corners"] == 4 and e["reproj_inlier"]["n_excluded"] == 1
 
 
 def test_reproj_grading_rescaled_for_corner_norm_convention():

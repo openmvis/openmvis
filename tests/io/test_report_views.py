@@ -150,3 +150,26 @@ def test_report_carries_the_reference_ghost_and_its_deltas():
     assert rig["ref"]["label"] == "factory" and np.allclose(rig["ref"]["cams"][0]["p"], p0 + [3.0, 4.0, 0.0])
     txt = cam_imu_text_report(r, ref)
     assert "factory" in txt and "5.0" in txt      # |lever delta| = 5 mm
+
+
+def test_rig_table_shows_reprojection_median_and_p95_not_rms():
+    """The 3D rig table's reprojection column is median / P95 (the user, 2026-11-15: no RMS)."""
+    from pathlib import Path
+    from mvis.analysis.cam_imu_report import cam_imu_html_report
+    from tests.io.test_cam_imu_report import _result_with_geometry, view_specs
+    r = _result_with_geometry()
+    for e in r.cameras:
+        e.update(reproj_rms_px=0.9, reproj_median_px=0.2, reproj_p95_px=0.6)
+    cam = view_specs(cam_imu_html_report(r))["rig"]["cams"][0]
+    assert (cam["reproj_med"], cam["reproj_p95"]) == (0.2, 0.6)
+    js = (Path(__file__).parents[2] / "src/mvis/analysis/views/assets/views.js").read_text()
+    assert "Reprojection median / P95 (px)" in js and "c.reproj.toFixed" not in js
+
+
+def test_cam_only_rig_spec_takes_median_and_p95_per_camera():
+    from types import SimpleNamespace as NS
+    from mvis.analysis.views.spec import cam_only_rig_spec
+    cams = [NS(camera_id=i, distortion_model="radtan", intrinsics=[400, 400, 320, 240], distortion=[0, 0, 0, 0],
+               image_size=(640, 480), rolling_shutter_readout=0.0) for i in range(2)]
+    spec = cam_only_rig_spec(cams, {1: np.eye(4)}, 0, {0: (0.11, 0.31), 1: (0.12, 0.32)})
+    assert [(c["reproj_med"], c["reproj_p95"]) for c in spec["cams"]] == [(0.11, 0.31), (0.12, 0.32)]

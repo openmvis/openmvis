@@ -233,7 +233,7 @@ def test_summary_uses_median_p95_not_rms():
     """The headline reprojection metric is median + p95;
     RMS appears only as the legacy fallback when median/p95 are absent."""
     html = cam_imu_html_report(_rich_result())
-    assert "Reproj median" in html and "Reproj p95" in html
+    assert "Reproj median" in html and "Reproj P95" in html
     assert "Reproj RMS" not in html
     legacy = _fake_result()
     del legacy.diagnostics["reproj_median_px"], legacy.diagnostics["reproj_p95_px"]
@@ -258,7 +258,7 @@ def test_config_and_result_files_folded_with_copy(tmp_path):
 
 def test_brand_is_openmvis():
     html = cam_imu_html_report(_fake_result())
-    assert "<h1>OpenMVIS</h1>" in html
+    assert "</span>OpenMVIS</h1>" in html
     assert cam_imu_text_report(_fake_result()).splitlines()[1].startswith("OpenMVIS")
 
 

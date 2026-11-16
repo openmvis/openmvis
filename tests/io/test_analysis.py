@@ -55,7 +55,7 @@ class TestReport:
 
         report = print_report(result)
         assert "MVIS" in report
-        assert "Camera 0" in report
+        assert "cam0" in report
         assert "fx = 500.0000" in report
         assert "Median:" in report
         assert "P90:" in report
@@ -130,5 +130,5 @@ class TestHtmlReport:
         assert "P90 (px)" in html
         assert "P95 (px)" in html
         # Values present in the table
-        assert "0.7000" in html  # p90 formatted
-        assert "0.9000" in html  # p95 formatted
+        assert "0.700" in html  # p90 formatted (3 decimals, px)
+        assert "0.900" in html  # p95 formatted (3 decimals, px)

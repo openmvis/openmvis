@@ -80,7 +80,7 @@ from mvis.imu import (
     intrinsic_sigma_vector, intrinsic_block_slices,
 )
 from .factors.lie_groups import log_so3, so3_right_jacobian_inv
-from .reproj_stats import corner_stats
+from .reproj_stats import reproj_entry
 from .state_dump import maybe_perturb_initial_values, maybe_dump_state
 from .lm_params import (LM_LAMBDA_LOWER_DEFAULT, LM_LAMBDA_UPPER_DEFAULT,
                         make_lm_params)
@@ -1233,6 +1233,33 @@ def _imu_cost_split(imu_factors, values, k_tga=None):
     return sums, per_interval
 
 
+IMU_BLOCKS = (("theta", slice(0, 3)), ("p", slice(3, 6)), ("v", slice(6, 9)),
+              ("bg", slice(9, 12)), ("ba", slice(12, 15)))
+
+
+def _imu_block_residuals(imu_factors, values, k_tga=None) -> dict:
+    """Per interval and per IMU-state block [theta, p, v, bg, ba]: the whitened norm |W r_b| and the raw
+    norm |r_b| in the block's unit (rad, m, m/s and the bias steps), with each interval's Dt. The report's
+    IMU Residuals section reads it; same factors and t_ga as `_imu_cost_split`. A factor without the raw
+    residual (`_common`) leaves its raw row NaN."""
+    t_ga = float(values.atVector(k_tga)[0]) if k_tga is not None else 0.0
+    n = len(imu_factors)
+    white = np.full((n, len(IMU_BLOCKS)), np.nan)
+    raw = np.full((n, len(IMU_BLOCKS)), np.nan)
+    dt = np.full(n, np.nan)
+    for k, fac in enumerate(imu_factors):
+        args = (values.atPose3(X(k)), values.atPose3(X(k + 1)), values.atVector(_Vk(k)),
+                values.atVector(_Vk(k + 1)), values.atVector(I0), t_ga)
+        r = fac.whitened_error(*args)
+        e = fac._common(*args)[0] if hasattr(fac, "_common") else None
+        for j, (_name, sl) in enumerate(IMU_BLOCKS):
+            white[k, j] = float(np.linalg.norm(r[sl]))
+            if e is not None:
+                raw[k, j] = float(np.linalg.norm(e[sl]))
+        dt[k] = float(getattr(fac, "Dt", np.nan))
+    return {"blocks": [b for b, _ in IMU_BLOCKS], "white": white, "raw": raw, "dt": dt}
+
+
 # ---------------------------------------------------------------------------
 # old private name of detection.corner_subsample.corner_mask, kept for the tests that import it
 _corner_mask = corner_mask
@@ -1747,6 +1774,7 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
     rms_post, fac_cam = _reproj_rms(cam_factors, res, table=table_post)
     corner_px, corner_cam = _reproj_corner_norms(cam_factors, res, table=table_post)
     imu_split, imu_per_interval = _imu_cost_split(imu_factors, res, O0 if est_t_ga_run(cfg) else None)
+    imu_blocks = guarded(lambda: _imu_block_residuals(imu_factors, res, O0 if est_t_ga_run(cfg) else None))
     timings['post_diag_s'] = time.time() - _tic
     n_cam_dof = int(sum(2 * f.n for _c, _j, f in cam_factors))
     n_imu_dof = 15 * len(imu_factors)
@@ -1774,12 +1802,9 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
     cameras = []
     for c in range(n_cams):
         m = fac_cam == c
-        cs = corner_stats(corner_px[corner_cam == c])
         entry = {
             'calib': sols[c], 'calib_sigma': sigma_Cs[c],
-            'reproj_rms_px': cs['rms'],
-            'reproj_median_px': cs['median'],
-            'reproj_p95_px': cs['p95'],
+            **reproj_entry(corner_px[corner_cam == c], cfg.sigma_px),
             'n_frames': int(np.sum(m)), 'n_dropped': n_dropped[c],
             'image_size': image_sizes[c],
             'corner_accounting': accounting[c],
@@ -1812,21 +1837,19 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
     # guarded corners are zero rows in the optimizer's residual, so the sum of
     # the valid corner norms squared IS the total squared vision residual
     cam_cost = float(np.sum(corner_px ** 2)) / cfg.sigma_px ** 2 * 0.5
-    all_stats = corner_stats(corner_px)
     diagnostics = {
         'iterations': opt.iterations(),
         'tga_relinearizations': list(getattr(opt, 'relinearizations', [])),
         'err_init': err_init, 'err_final': err_final,
         'reproj_rms_pre_px': rms_pre, 'reproj_rms_post_px': rms_post,
-        'reproj_rms_px': all_stats['rms'],
-        'reproj_median_px': all_stats['median'],
-        'reproj_p95_px': all_stats['p95'],
+        **reproj_entry(corner_px, cfg.sigma_px),
         'reproj_frame_cam': fac_cam,
         # per camera: signed corner errors by frame + norms by board corner (report's scatter
         # and corner heatmap); in memory only, cam_imu.json keeps the summary
         'reproj_corners_by_cam': table_post.by_camera(cam_factors),
         'imu_cost_split': imu_split,
         'imu_interval_cost': imu_per_interval,
+        'imu_block_residuals': imu_blocks,     # per interval, per state block (report section IMU Residuals)
         'imu_chi2_dof': float(sum(imu_split.values()) / max(n_imu_dof, 1)),
         'cam_chi2_dof': float(2 * cam_cost / max(n_cam_dof, 1)),
         'shift_from_seed_xi': np.asarray(res.atVector(C0), float),
@@ -2180,11 +2203,8 @@ def run_cam_imu_calibration_feature_multi(cams, t_imu, w_m, a_m, *,
     cameras = []
     for c in range(len(cams)):
         m = fcam == c
-        cs = corner_stats(corner_px[corner_cam == c])
         e = {'calib': sols[c], 'calib_sigma': sigC[c],
-             'reproj_rms_px': cs['rms'],
-             'reproj_median_px': cs['median'],
-             'reproj_p95_px': cs['p95'],
+             **reproj_entry(corner_px[corner_cam == c], cfg.sigma_px),
              'n_frames': int(m.sum()), 'n_dropped': n_dropped[c],
              'image_size': image_sizes[c],
              'corner_accounting': accounting[c]}
@@ -2195,12 +2215,9 @@ def run_cam_imu_calibration_feature_multi(cams, t_imu, w_m, a_m, *,
 
     imus = _aux_imu_entries(res, marg, aux_data, aux_factors)
 
-    all_stats = corner_stats(corner_px)
     diagnostics = {
         'structure': 'feature', 'sfm_mode': sfm_mode, 'iterations': n_iters,
-        'reproj_rms_px': all_stats['rms'],
-        'reproj_median_px': all_stats['median'],
-        'reproj_p95_px': all_stats['p95'],
+        **reproj_entry(corner_px, cfg.sigma_px),
         'reproj_frame_cam': fcam, 'reproj_per_frame': rms, 'n_states': len(t_states),
         'frame_meta': [(c, f.n, float(f.dt_frame), float(f.dt))
                        for (c, _jj, f) in cam_factors],   # (cam, n_corners, dt_frame, dt)

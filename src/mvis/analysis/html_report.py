@@ -44,7 +44,7 @@ from mvis.analysis.report_shell import (  # shared shell
     ReportStyle, REPORT_STYLE,
     _fig_to_base64, _image_to_base64, _plotly_to_html,
     _grade_cell, render_page,
-    config_fold, result_files_html,
+    config_fold, report_plot_style, result_files_html,
 )
 
 
@@ -72,7 +72,7 @@ def _kb_domain_rows(cameras) -> list:
         cr = info["corner_radius_px"]
         cov = info["covers_image"]
         out.append(
-            f"<tr><td>{cam.camera_id}</td>"
+            f"<tr><td>cam{cam.camera_id}</td>"
             f"<td class=\"num\">{'none (monotonic)' if th is None else f'{np.degrees(th):.1f}'}</td>"
             f"<td class=\"num\">{info['max_radius_px']:.1f}</td>"
             f"<td class=\"num\">{'' if cr is None else f'{cr:.1f}'}</td>"
@@ -89,9 +89,21 @@ def _corner_accounting_rows(result) -> list:
     acc = getattr(result, "corner_accounting", None)
     if not acc:
         return []
+    lines = []
+    for cid in sorted(acc):
+        a = acc[cid]
+        why = [(n, a.get(k, 0)) for n, k in (("past the fold", "past_fold"), ("other invalid", "other_invalid"),
+                                             ("in no-pose frames", "no_pose_frames"), ("outliers", "outliers"))]
+        left = [f"{v:,} {n}" for n, v in why if v]
+        lines.append(f"<li><b>cam{cid}</b>: {a['used']:,} corners used"
+                     + (f"; left out: {', '.join(left)}" if left else "; none left out")
+                     + (" <strong>(fold ALARM)</strong>" if a.get("fold_level") == "alarm" else "") + "</li>")
     out = ["<h3>Corner Accounting</h3>",
            "<p>Corners in frames with a final pose. A corner past the fold or otherwise "
            "out of the model's domain is not in the error figures.</p>",
+           "<ul class='acc'>" + "".join(lines) + "</ul>",
+           '<details class="appendix"><summary>Full corner accounting (click to expand)</summary>'
+           '<div class="appendix-content">',
            "<table><tr><th>Camera</th><th>Used</th><th>Past fold</th><th>Other invalid</th>"
            "<th>No-pose frames</th><th>Outliers</th><th>Max &theta; (deg)</th>"
            "<th>Fold (deg)</th><th>Fold level</th></tr>"]
@@ -102,13 +114,13 @@ def _corner_accounting_rows(result) -> list:
         n_first = a.get("past_fold_pass1", 0)
         first = f" ({n_first} at the first pass)" if n_first else ""
         out.append(
-            f"<tr><td>{cid}</td><td class=\"num\">{a['used']}</td>"
+            f"<tr><td>cam{cid}</td><td class=\"num\">{a['used']}</td>"
             f"<td class=\"num\">{a['past_fold']}{first}</td><td class=\"num\">{a['other_invalid']}</td>"
             f"<td class=\"num\">{a['no_pose_frames']}</td><td class=\"num\">{a['outliers']}</td>"
             f"<td class=\"num\">{'' if th is None else f'{th:.1f}'}</td>"
             f"<td class=\"num\">{'' if fold is None else f'{fold:.1f}'}</td>"
             f"<td>{'<strong>ALARM</strong>' if level == 'alarm' else level}</td></tr>")
-    out.append("</table>")
+    out.append("</table></div></details>")
     return out
 
 
@@ -119,7 +131,7 @@ def _ucm_kalibr_rows(cameras) -> list[str]:
         if cam.distortion_model != "ucm" or not 0.0 <= cam.distortion[0] < 1.0:
             continue
         a = float(cam.distortion[0])
-        out.append(f"<p class='note'>Camera {cam.camera_id} ucm as Kalibr omni-none: "
+        out.append(f"<p class='note'>cam{cam.camera_id} ucm as Kalibr omni-none: "
                    f"&xi; = {a / (1 - a):.6f}, &gamma; = ({cam.fx / (1 - a):.4f}, "
                    f"{cam.fy / (1 - a):.4f})</p>")
     return out
@@ -155,12 +167,104 @@ def _distortion_table_rows(cameras) -> list[str]:
             coefs += [0.0] * n_cols
             cells = [fmt.format(coefs[i]) for i in range(n_cols)]
         coef_cells = "".join(f"<td class='num'>{c}</td>" for c in cells)
-        rows.append(f"<tr><td>{cam.camera_id}</td>"
+        rows.append(f"<tr><td>cam{cam.camera_id}</td>"
                     f"<td>{cam.distortion_model}</td>"
                     f"{coef_cells}</tr>")
     return rows
 
 
+
+def _cam_only_title(title: str, result, calibration_info) -> str:
+    """'Camera calibration · <recording(s)> · cam0, cam1' from the cameras' sources; the given title when
+    no source is known (it is then a 'dataset / collection' name from the config path)."""
+    import os
+    ci = (calibration_info or {}).get("cameras_info") or {}
+    srcs = []
+    for c in sorted(ci):
+        sp = (ci[c] or {}).get("source_path")
+        if sp:
+            b = os.path.basename(str(sp).rstrip("/"))
+            if b and b not in srcs:
+                srcs.append(b)
+    cams = ", ".join(f"cam{c.camera_id}" for c in result.cameras)
+    if not srcs:
+        return f"Camera calibration · {title}" if title and title != "Calibration Results" else "Camera calibration"
+    return f"Camera calibration · {', '.join(srcs)} · {cams}"
+
+
+def _cam_only_param_folds(result) -> str:
+    """Summary: every calibrated parameter of a camera-only result, one closed fold per camera
+    (param_folds): intrinsics, named distortion, image size, field of view, readout; for a multi-camera
+    solve the pose in the reference camera and the time offset; reprojection statistics; and the camera's
+    block of calibration.yaml (OutputWriter.to_calibration_dict) behind a Copy button."""
+    from mvis.analysis.param_folds import folds_block, group, num, sensor_fold, val, vec, yaml_block
+    from mvis.core.camera_models import dist_names
+    from mvis.io.output_writer import OutputWriter
+    try:
+        doc = OutputWriter.to_calibration_dict(result)
+    except Exception:
+        doc = {}
+    errs = {e.camera_id: e for e in (result.reprojection_errors or [])}
+    exts = {x.from_camera: x for x in (result.extrinsics or [])}
+    ref = result.reference_camera
+    folds = []
+    for cam in result.cameras:
+        cid = cam.camera_id
+        names = dist_names(cam.distortion_model) or [f"d{i}" for i in range(len(cam.distortion))]
+        e = errs.get(cid)
+        fov = None
+        try:
+            from mvis.analysis.views.geometry import fov_deg
+            from mvis.calibration.factors.camera_projection import k_cal_vec
+            if cam.image_size and min(cam.image_size) > 0:
+                fov = fov_deg(cam.distortion_model, k_cal_vec(cam.distortion_model, cam.intrinsics[:4], cam.distortion),
+                              cam.image_size)
+        except Exception:
+            fov = None
+        rs = float(cam.rolling_shutter_readout or 0.0)
+        x = exts.get(cid)
+        dt = (result.time_offsets or {}).get(cid)
+        key = (f"{cam.distortion_model} · fx {num(cam.fx, 'px2')}"
+               + (f" · baseline {num(1e3 * float(np.linalg.norm(x.translation)), 'mm')} mm to cam{ref}" if x is not None else "")
+               + (f" · reproj median / P95 {num(e.median, 'px')} / {num(e.p95, 'px')} px" if e is not None else ""))
+        groups = [
+            group("Intrinsics", [("model", cam.distortion_model),
+                                 ("fx", val(cam.fx, "px2")), ("fy", val(cam.fy, "px2")),
+                                 ("cx", val(cam.cx, "px2")), ("cy", val(cam.cy, "px2")),
+                                 *[(n, val(v, "coef")) for n, v in zip(names, cam.distortion)],
+                                 ("image size", f"{cam.image_size[0]} × {cam.image_size[1]}"
+                                  if cam.image_size and min(cam.image_size) > 0 else None),
+                                 ("field of view H × V", f"{fov['h']:.0f}° × {fov['v']:.0f}°"
+                                  if fov and fov.get("h") is not None and fov.get("v") is not None else None)]),
+            group("Time", [("readout", "global shutter" if rs == 0.0 else
+                            val(1e3 * rs, "ms", 1e3 * cam.rolling_shutter_readout_sigma
+                                if cam.rolling_shutter_readout_sigma else None)),
+                           (f"time offset to cam{ref}", val(1e3 * dt, "ms") if dt is not None and cid != ref else None)]),
+            group(f"Pose in cam{ref} (T_cam{ref}←cam{cid})",
+                  [("translation x, y, z (mm)", vec(1e3 * np.asarray(x.translation, float), "mm")),
+                   ("|translation|", val(1e3 * float(np.linalg.norm(x.translation)), "mm")),
+                   ("log(R) x, y, z (rad)", vec(np.asarray(x.so3, float), "rad")),
+                   ("|rotation|", val(float(np.linalg.norm(x.so3)), "rad"))] if x is not None else []),
+            group("Reprojection", [("mean", val(e.mean, "px")), ("median", val(e.median, "px")),
+                                   ("std", val(e.std, "px") if getattr(e, "std", 0) else None),
+                                   ("P90", val(e.p90, "px")), ("P95", val(e.p95, "px")),
+                                   ("max", val(e.max, "px") if e.max else None),   # 0 = not recorded (rebuilt from the db)
+                                   ("corners", f"{e.num_observations:,}")] if e is not None else []),
+        ]
+        blk = next((c for c in doc.get("cameras", []) if c.get("id", c.get("camera_id")) == cid), None)
+        if blk is not None:
+            blk = dict(blk)
+            tr = next((t for t in doc.get("extrinsics", {}).get("transforms", []) if t.get("from") == cid), None)
+            if tr is not None:
+                blk["extrinsics"] = tr
+            rp = next((r for r in doc.get("reprojection_errors", {}).get("per_camera", []) if r.get("camera") == cid), None)
+            if rp is not None:
+                blk["reprojection"] = rp
+        folds.append(sensor_fold(f"cam{cid}", key, groups, yaml_block(blk)))
+    return folds_block(folds)
+
+
+@report_plot_style
 def generate_html_report(
     result: CalibrationResult,
     all_frames: dict[int, list[FrameObservations]],
@@ -238,6 +342,7 @@ def generate_html_report(
     def next_sec():
         sec_num[0] += 1
         return sec_num[0]
+    app_letters = iter("ABCDEFGHIJ")    # appendices lettered in the order they appear
     def sec_div(sec_id: str) -> str:
         """Return opening <div> tag with alternating background class."""
         sec_idx[0] += 1
@@ -265,23 +370,34 @@ def generate_html_report(
     overall_median, overall_p95 = overall["median"], overall["p95"]
 
     toc_entries.append(("sec-summary", f"{sn}. Summary"))
+    # the same Summary as the cam-IMU report: graded tiles, a facts line, the per-camera table, the folds
+    from mvis.analysis.verdict import GRADE_DISPLAY, MED_GRADE, P95_GRADE, grade as _vgrade
+    from mvis.analysis.report_shell import cam_label, graded, html_table, stat_box
+
+    def _g(v, th):
+        return GRADE_DISPLAY.get(_vgrade(v, *th))
+    tiles = ("<div class='stat-row'>"
+             + stat_box(f"{overall_median:.3f} px", "Reproj median", _g(overall_median, MED_GRADE))
+             + stat_box(f"{overall_p95:.3f} px", "Reproj P95", _g(overall_p95, P95_GRADE))
+             + stat_box(n_cameras, "Cameras") + stat_box(f"{total_frames:,}", "Frames")
+             + stat_box(f"{total_obs:,}", "Observations") + "</div>")
+    facts = [("Board", board.__class__.__name__.replace("Board", " board").strip()),
+             ("Points", f"{board.num_points()}")] + ([("Tags", f"{num_tags}")] if not is_chessboard else [])
+    if result.reference_camera is not None and n_cameras > 1:
+        facts.append(("Reference", f"cam{result.reference_camera}"))
+    facts_html = "<div class='facts'>" + "".join(f"<span><b>{k}</b> {v}</span>" for k, v in facts) + "</div>"
+    per_cam = html_table(
+        ["Camera", "Mean (px)", "Median (px)", "Std (px)", "P90 (px)", "P95 (px)", "Max (px)", "Corners"],
+        [[cam_label(e.camera_id), f"{e.mean:.3f}", graded(f"{e.median:.3f}", _g(e.median, MED_GRADE)),
+          f"{e.std:.3f}" if e.std else "—", f"{e.p90:.3f}", graded(f"{e.p95:.3f}", _g(e.p95, P95_GRADE)),
+          f"{e.max:.2f}" if e.max else "—", f"{e.num_observations:,}"]
+         for e in result.reprojection_errors])
     sections.append(f"""
     {sec_div("sec-summary")}
     <h2>{sn}. Summary</h2>
-    <div class="stat-row">
-        <div class="stat-box"><div class="value">{n_cameras}</div><div class="label">Cameras</div></div>
-        <div class="stat-box"><div class="value">{total_frames}</div><div class="label">Frames</div></div>
-        <div class="stat-box"><div class="value">{total_obs:,}</div><div class="label">Observations</div></div>
-        <div class="stat-box"><div class="value">{overall_median:.4f} px</div><div class="label">Overall Median</div></div>
-        <div class="stat-box"><div class="value">{overall_p95:.4f} px</div><div class="label">Overall P95</div></div>
-    </div>
-    <h3>Board Configuration</h3>
-    <table>
-        <tr><th>Property</th><th>Value</th></tr>
-        <tr><td>Type</td><td>{board.__class__.__name__}</td></tr>
-        <tr><td>Total Points</td><td>{board.num_points()}</td></tr>
-        <tr><td>Total Tags</td><td>{num_tags}</td></tr>
-    </table>""")
+    {tiles}{facts_html}
+    <h3>Reprojection per camera</h3>{per_cam}""")
+    sections.append(_cam_only_param_folds(result))
 
     # Diverged pose stats
     dp = getattr(result, "diverged_pose_stats", None)
@@ -305,13 +421,13 @@ def generate_html_report(
     # Linear intrinsics
     sections.append("<h3>Linear Intrinsics</h3>")
     sections.append("""<table>
-        <tr><th>Camera</th><th>Model</th><th>fx</th><th>fy</th><th>cx</th><th>cy</th>
+        <tr><th>Camera</th><th>Model</th><th>fx (px)</th><th>fy (px)</th><th>cx (px)</th><th>cy (px)</th>
             <th>Image Size</th></tr>""")
     for cam in result.cameras:
         sections.append(f"""<tr>
-            <td>{cam.camera_id}</td><td>pinhole + {cam.distortion_model}</td>
-            <td class="num">{cam.fx:.4f}</td><td class="num">{cam.fy:.4f}</td>
-            <td class="num">{cam.cx:.4f}</td><td class="num">{cam.cy:.4f}</td>
+            <td>cam{cam.camera_id}</td><td>pinhole + {cam.distortion_model}</td>
+            <td class="num">{cam.fx:.2f}</td><td class="num">{cam.fy:.2f}</td>
+            <td class="num">{cam.cx:.2f}</td><td class="num">{cam.cy:.2f}</td>
             <td>{cam.image_size[0]}&times;{cam.image_size[1]}</td></tr>""")
     sections.append("</table>")
 
@@ -361,7 +477,7 @@ def generate_html_report(
             r_str = f"[{ext.so3[0]:.6f}, {ext.so3[1]:.6f}, {ext.so3[2]:.6f}]"
             rot_rad = float(np.linalg.norm(ext.so3))
             baseline = float(np.linalg.norm(ext.translation))
-            sections.append(f"""<tr><td>{ext.from_camera}</td><td>{ext.to_camera}</td>
+            sections.append(f"""<tr><td>cam{ext.from_camera}</td><td>cam{ext.to_camera}</td>
                 <td>{t_str}</td><td>{r_str}</td><td class="num">{rot_rad:.6f}</td>
                 <td class="num">{baseline:.6f}</td></tr>""")
         sections.append("</table>")
@@ -406,14 +522,14 @@ def generate_html_report(
             sections.append(f"<p>Reference camera: <strong>{result.reference_camera}</strong></p><table>")
             sections.append("<tr><th>Camera</th><th>dt (seconds)</th></tr>")
             for cam_id, dt in result.time_offsets.items():
-                sections.append(f"<tr><td>{cam_id}</td><td class='num'>{dt:.9f}</td></tr>")
+                sections.append(f"<tr><td>cam{cam_id}</td><td class='num'>{dt:.9f}</td></tr>")
             sections.append("</table>")
 
         if has_rs:
             sections.append("<h3>Rolling Shutter Readout</h3>")
             sections.append("<table><tr><th>Camera</th><th>Readout Time (s)</th></tr>")
             for cam in result.cameras:
-                sections.append(f"<tr><td>{cam.camera_id}</td>"
+                sections.append(f"<tr><td>cam{cam.camera_id}</td>"
                                 f"<td class='num'>{cam.rolling_shutter_readout:.6f}</td></tr>")
             sections.append("</table>")
 
@@ -446,15 +562,16 @@ def generate_html_report(
     toc_entries.append(("sec-reproj", f"{sn}. Reprojection Errors"))
     sections.append(f'{sec_div("sec-reproj")}<h2>{sn}. Reprojection Error Analysis</h2>')
     sections.append(f"""<h3>Summary</h3><table>
-        <tr><th>Camera</th><th>Mean (px)</th><th>Median (px)</th>
+        <tr><th>Camera</th><th>Mean (px)</th><th>Median (px)</th><th>Std (px)</th>
             <th>P90 (px)</th><th>P95 (px)</th>
             <th>Max (px)</th><th>{unit_label}s</th><th>Observations</th></tr>""")
     for err in result.reprojection_errors:
         tags = err.num_observations // corners_per_tag
-        sections.append(f"""<tr><td>{err.camera_id}</td>
-            <td class="num">{err.mean:.4f}</td><td class="num">{err.median:.4f}</td>
-            <td class="num">{err.p90:.4f}</td><td class="num">{err.p95:.4f}</td>
-            <td class="num">{err.max:.4f}</td><td class="num">{tags:,}</td>
+        sections.append(f"""<tr><td>cam{err.camera_id}</td>
+            <td class="num">{err.mean:.3f}</td><td class="num">{err.median:.3f}</td>
+            <td class="num">{f"{err.std:.3f}" if err.std else "—"}</td><td class="num">{err.p90:.3f}</td>
+            <td class="num">{err.p95:.3f}</td>
+            <td class="num">{f"{err.max:.3f}" if err.max else "—"}</td><td class="num">{tags:,}</td>
             <td class="num">{err.num_observations:,}</td></tr>""")
     if is_chessboard:
         sections.append("<p class='note'>Corners = individual chessboard corner observations.</p>")
@@ -466,8 +583,8 @@ def generate_html_report(
     # Per-camera error plots
     for cam_id, edata in sorted(error_data.items()):
         sec_id = f"sec-cam-{cam_id}"
-        toc_entries.append((sec_id, f"  Camera {cam_id} Errors"))
-        sections.append(f'{sec_div(sec_id)}<h3>Camera {cam_id} — Error Analysis</h3>')
+        toc_entries.append((sec_id, f"  cam{cam_id} Errors"))
+        sections.append(f'{sec_div(sec_id)}<h3>cam{cam_id} — Error Analysis</h3>')
 
         # Prefer robust (median + p95) plot
         if "frame_median" in edata and "frame_p95" in edata:
@@ -533,7 +650,7 @@ def generate_html_report(
         sections.append("""<table>
             <tr><th>Metric</th><th>Description</th>""")
         for cam_id in sorted(motion_metrics.keys()):
-            sections.append(f"<th>Camera {cam_id}</th>")
+            sections.append(f"<th>cam{cam_id}</th>")
         sections.append("</tr>")
 
         # Board size info
@@ -594,7 +711,7 @@ def generate_html_report(
         sections.append("<h3>Assessment</h3><table>"
                         "<tr><th>Parameter</th><th>Metric</th>")
         for cam_id in sorted(motion_metrics.keys()):
-            sections.append(f"<th>Camera {cam_id}</th>")
+            sections.append(f"<th>cam{cam_id}</th>")
         sections.append("</tr>")
 
         for label, metric, key, desc in assessment_params:
@@ -686,7 +803,7 @@ def generate_html_report(
         for cam_id, stats in sorted(detection_stats.items()):
             rate = stats["detected_frames"] / max(stats["total_frames"], 1) * 100
             sections.append(f"""<tr>
-                <td>{cam_id}</td><td class="num">{stats['total_frames']}</td>
+                <td>cam{cam_id}</td><td class="num">{stats['total_frames']}</td>
                 <td class="num">{stats['detected_frames']}</td><td class="num">{rate:.0f}%</td>
                 <td class="num">{stats['mean_tags']:.1f}</td><td class="num">{stats['min_tags']}</td>
                 <td class="num">{stats['max_tags']}</td></tr>""")
@@ -724,7 +841,7 @@ def generate_html_report(
     if detection_images:
         sections.append("<h3>Sample Detections</h3>")
         for cam_id, images in sorted(detection_images.items()):
-            sections.append(f"<h4>Camera {cam_id}</h4>")
+            sections.append(f"<h4>cam{cam_id}</h4>")
             sections.append('<div class="img-grid">')
             for img in images[:5]:
                 b64 = _image_to_base64(img)
@@ -735,9 +852,11 @@ def generate_html_report(
     # ========== PIPELINE TIMING ==========
     tim = getattr(result, "timings", None)
     if tim and tim.get("sections"):
-        sn = next_sec()
-        toc_entries.append(("sec-timing", f"{sn}. Pipeline Timing"))
-        sections.append(f'{sec_div("sec-timing")}<h2>{sn}. Pipeline Wall-Clock Breakdown</h2>')
+        al = next(app_letters)
+        toc_entries.append(("sec-timing", f"Appendix {al} · Timing"))
+        sections.append(f'{sec_div("sec-timing")}<h2>Appendix {al}: Pipeline Wall-Clock Breakdown</h2>'
+                        '<details class="appendix"><summary>Stage timings (click to expand)</summary>'
+                        '<div class="appendix-content">')
         try:
             fig = plot_timing_breakdown(tim)
             sections.append(
@@ -770,22 +889,22 @@ def generate_html_report(
                     f"<td class='num'>{cpct:.1f}%</td>"
                     f"<td>{cmeta}</td></tr>"
                 )
-        sections.append("</table></div>")
+        sections.append("</table></div></details></div>")
 
     # ========== RESULT FILES (verbatim yaml, folded) ==========
     res_html = result_files_html((calibration_info or {}).get("result_files"))
     if res_html:
-        sn = next_sec()
-        toc_entries.append(("sec-results", f"{sn}. Result Files"))
-        sections.append(f'{sec_div("sec-results")}<h2>{sn}. Result Files</h2>'
+        al = next(app_letters)
+        toc_entries.append(("sec-results", f"Appendix {al} · Result files"))
+        sections.append(f'{sec_div("sec-results")}<h2>Appendix {al}: Result Files</h2>'
                         f'{res_html}</div>')
 
     # ========== CALIBRATION CONFIGURATION ==========
     if calibration_info:
-        sn = next_sec()
         ci = calibration_info
-        toc_entries.append(("sec-config", f"{sn}. Configuration"))
-        sections.append(f'{sec_div("sec-config")}<h2>{sn}. Calibration Configuration</h2>')
+        al = next(app_letters)
+        toc_entries.append(("sec-config", f"Appendix {al} · Configuration"))
+        sections.append(f'{sec_div("sec-config")}<h2>Appendix {al}: Calibration Configuration</h2>')
         # Global paths
         rows = []
         if ci.get("config_path"):
@@ -820,7 +939,7 @@ def generate_html_report(
                 hz_s = f"{hz:.2f}" if isinstance(hz, (int, float)) else ""
                 dur_s = f"{dur:.1f}" if isinstance(dur, (int, float)) else ""
                 sections.append(f"""<tr>
-                    <td>{cid}</td><td>{name}</td><td>{src_type}</td><td><code>{path}</code></td>
+                    <td>cam{cid}</td><td>{name}</td><td>{src_type}</td><td><code>{path}</code></td>
                     <td>{distm}</td><td class="num">{nframes}</td><td class="num">{hz_s}</td>
                     <td class="num">{dur_s}</td></tr>""")
             sections.append("</table>")
@@ -836,8 +955,9 @@ def generate_html_report(
 
     # ========== APPENDIX A: LOWEST-DETECTION FRAMES ==========
     if all_detection_images and appendix_max_frames > 0:
-        toc_entries.append(("sec-appendix-a", "Appendix A"))
-        sections.append(f'{sec_div("sec-appendix-a")}<h2>Appendix A: Lowest-Detection Frames</h2>')
+        al = next(app_letters)
+        toc_entries.append(("sec-appendix-a", f"Appendix {al} · Lowest-detection frames"))
+        sections.append(f'{sec_div("sec-appendix-a")}<h2>Appendix {al}: Lowest-Detection Frames</h2>')
         appendix_cap = appendix_max_frames
         sections.append(
             '<details class="appendix"><summary>'
@@ -876,7 +996,7 @@ def generate_html_report(
 
             unit_lc = unit_label.lower()
             sections.append(
-                f"<h3>Camera {cam_id} — lowest {len(lowest)} by {unit_lc} count "
+                f"<h3>cam{cam_id} — lowest {len(lowest)} by {unit_lc} count "
                 f"(expected {expected_tags})</h3>")
             for fi, n_tags_frame, n_obs, ts in lowest:
                 img = images[fi]
@@ -896,8 +1016,9 @@ def generate_html_report(
     has_heatmap = any("frame_tag_errors" in ed and ed["frame_tag_errors"]
                       for ed in error_data.values())
     if has_heatmap:
-        toc_entries.append(("sec-appendix-b", "Appendix B"))
-        sections.append(f'{sec_div("sec-appendix-b")}<h2>Appendix B: Per-Frame Per-{unit_label} Error</h2>')
+        al = next(app_letters)
+        toc_entries.append(("sec-appendix-b", f"Appendix {al} · Per-frame per-{unit_label.lower()} error"))
+        sections.append(f'{sec_div("sec-appendix-b")}<h2>Appendix {al}: Per-Frame Per-{unit_label} Error</h2>')
         sections.append(
             f'<details class="appendix"><summary>Per-frame per-{unit_label.lower()} error heatmaps '
             f'(click to expand)</summary><div class="appendix-content">'
@@ -907,12 +1028,12 @@ def generate_html_report(
                 n_frames = len(all_frames.get(cam_id, []))
                 fig = plot_frame_tag_heatmap(
                     edata["frame_tag_errors"], n_frames, num_tags, cam_id)
-                sections.append(f'<h3>Camera {cam_id}</h3>')
+                sections.append(f'<h3>cam{cam_id}</h3>')
                 sections.append(f'<div class="plot-container"><img src="data:image/png;base64,{fig_b64(fig)}"></div>')
         sections.append("</div></details></div>")
 
     # ========== ASSEMBLE HTML ==========
-    html = render_page(title, toc_entries, sections, style)
+    html = render_page(_cam_only_title(title, result, calibration_info), toc_entries, sections, style)
 
     with open(output_path, "w") as f:
         f.write(html)

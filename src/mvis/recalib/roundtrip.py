@@ -31,6 +31,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 
 import numpy as np
 import yaml
@@ -160,6 +161,11 @@ def _with_biases(result_json: str) -> dict:
     return d
 
 
+def apply_calib_command(rcpath: str) -> list[str]:
+    """The `mvis apply-calib` step as a subprocess of this interpreter (as the regression adapters run MVIS)."""
+    return [sys.executable, "-m", "mvis.cli.main", "apply-calib", "-c", rcpath]
+
+
 def run_roundtrip(config_path: str, *, out: str | None = None, keep_corrected: bool = False,
                   keep_bias: bool = False, bag_override: str | None = None) -> dict:
     """Run the full round-trip for a ROS1-bag cam-IMU config and return the report dict
@@ -203,7 +209,8 @@ def run_roundtrip(config_path: str, *, out: str | None = None, keep_corrected: b
     with open(rcpath, "w") as f:
         yaml.safe_dump({"calib": fcalib, "input": bag, "output": corrected,
                         "remove_bias": not keep_bias}, f)
-    subprocess.run(["mvis", "apply-calib", "-c", rcpath], check=True)
+    # this interpreter's MVIS, not whatever `mvis` is on PATH (unset when mvis is run by its full path)
+    subprocess.run(apply_calib_command(rcpath), check=True)
 
     print("== [3/3] recalibrate the corrected bag ==", flush=True)
     cfg2 = CamImuRunConfig.from_yaml(config_path)

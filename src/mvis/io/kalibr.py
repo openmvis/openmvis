@@ -125,9 +125,11 @@ def parse_results(path):
     cur_imu, sect = None, None
     for i, l in enumerate(L):
         s = l.strip()
-        m = re.match(r"Reprojection error \((cam\d)\) \[px\]:\s+mean ([\d.e-]+), median ([\d.e-]+)", s)
+        m = re.match(r"Reprojection error \((cam\d)\) \[px\]:\s+mean ([\d.e-]+), median ([\d.e-]+)"
+                     r"(?:, std:?\s*([\d.e-]+))?", s)
         if m:
-            out["cams"].setdefault(m.group(1), {}).update(reproj_mean=float(m.group(2)), reproj_median=float(m.group(3)))
+            out["cams"].setdefault(m.group(1), {}).update(reproj_mean=float(m.group(2)), reproj_median=float(m.group(3)),
+                                                          **({"reproj_std": float(m.group(4))} if m.group(4) else {}))
         m = re.match(r"(Gyroscope|Accelerometer) error \((imu\d)\) \[[^\]]+\]:\s+mean ([\d.e-]+), median ([\d.e-]+)", s)
         if m:
             out.setdefault("resid", {})[(m.group(2), m.group(1))] = (float(m.group(3)), float(m.group(4)))
@@ -223,7 +225,8 @@ def camera_imu(d):
     """One Kalibr camera + IMU run (input-*.yaml outputs + results txt), or None if absent.
 
     cams: topic, intr/dist (the run's fixed input), td_ms (timeshift), p_mm and lever_mm to imu0,
-          baseline_mm to cam0 (from the fixed input chain), reproj_median.
+          baseline_mm to cam0 (from the fixed input chain), reproj_mean / reproj_median / reproj_std
+          (std None in a results file without it).
     imus: topic, Dw = inv(M_g), Da = inv(M_a), Tg = A C_gyro_i, and for imu1..: p_mm, lever_mm, td_ms.
     """
     cc_p, im_p = os.path.join(d, "input-camchain-imucam.yaml"), os.path.join(d, "input-imu.yaml")
@@ -242,7 +245,7 @@ def camera_imu(d):
         p = centre_in_imu_mm(c["T_cam_imu"])
         e.update(p_mm=p.tolist(), lever_mm=float(np.linalg.norm(p)),
                  td_ms=float(c["timeshift_cam_imu"]) * 1000 + applied.get(k, 0.0),
-                 reproj_median=res["cams"].get(k, {}).get("reproj_median"))
+                 **{f: res["cams"].get(k, {}).get(f) for f in ("reproj_mean", "reproj_median", "reproj_std")})
         cams.append(e)
     for e in cams[1:]:
         e["baseline_mm"] = float(np.linalg.norm(np.subtract(e["p_mm"], cams[0]["p_mm"])))

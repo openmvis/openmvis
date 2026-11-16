@@ -237,6 +237,7 @@ def rig_spec(result, image_sizes=None, imu=None, reference=None) -> dict | None:
             "intr": _r(np.asarray(cal.intr, float), 6), "size": [int(size[0]), int(size[1])],
             "td": round(float(cal.td) * 1e3, 3), "tr": round(float(cal.tr) * 1e3, 3),
             "reproj": (round(float(e["reproj_rms_px"]), 3) if e.get("reproj_rms_px") is not None else None),
+            "reproj_med": _r3(e.get("reproj_median_px")), "reproj_p95": _r3(e.get("reproj_p95_px")),
             "rim": rim(cal.model, cv, size, per_side=12), "fov": fov_deg(cal.model, cv, size),
             "reach": _reach(e), "domain": _domain(cal.model), **_sigmas(e)})
     for m in getattr(result, "imus", None) or []:
@@ -358,8 +359,13 @@ def cam_only_scene_spec(poses, times, board, cameras, ext_by_id, ref_id, views=N
     return spec
 
 
+def _r3(v):
+    return None if v is None else round(float(v), 3)
+
+
 def cam_only_rig_spec(cameras, ext_by_id, ref_id, reproj=None) -> dict | None:
-    """The solved rig of a multi-camera camera-only solve, in the reference camera's frame (mm). None for one camera."""
+    """The solved rig of a multi-camera camera-only solve, in the reference camera's frame (mm). None for one camera.
+    reproj: camera id -> (median, P95) px, for the rig table."""
     order = sorted(cameras, key=lambda c: c.camera_id != ref_id)
     if len(order) < 2:
         return None
@@ -379,7 +385,9 @@ def cam_only_rig_spec(cameras, ext_by_id, ref_id, reproj=None) -> dict | None:
             "p": _r(Tc[:3, 3] * 1e3, 3), "R": _r(Tc[:3, :3].reshape(9), 6),
             "intr": _r(np.concatenate([np.asarray(cam.intrinsics, float)[:4], np.asarray(cam.distortion, float)]), 6),
             "size": size, "td": 0.0, "tr": round(float(getattr(cam, "rolling_shutter_readout", 0.0)) * 1e3, 3),
-            "reproj": (round(float(reproj[cid]), 3) if reproj and reproj.get(cid) is not None else None),
+            "reproj": None,     # camera-only rows carry no RMS here; the table shows median / P95
+            "reproj_med": _r3((reproj or {}).get(cid, (None, None))[0]),
+            "reproj_p95": _r3((reproj or {}).get(cid, (None, None))[1]),
             "rim": rim(cam.distortion_model, cv, size, per_side=12), "fov": fov_deg(cam.distortion_model, cv, size), "reach": None,
             "domain": _domain(cam.distortion_model)})
     return out

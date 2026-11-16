@@ -246,7 +246,7 @@ def test_cam_only_report_two_cameras_end_to_end(tmp_path):
     assert rig["origin"] == "cam0" and [c["p"] for c in rig["cams"]] == [[0.0, 0.0, 0.0], [40.0, 0.0, 0.0]]
     assert html.count("MVIS report views: the calibration process player") == 1   # the player once
 
-    assert "<h1>OpenMVIS</h1>" in html and "Calibration Process" in html
+    assert "</span>OpenMVIS</h1>" in html and "Calibration Process" in html
     ids = _section_ids(html)
     assert ids.index("sec-3d") < ids.index("sec-results") < ids.index("sec-config")
     assert "sec-appendix-a" not in ids or ids.index("sec-config") < ids.index("sec-appendix-a")
@@ -307,8 +307,10 @@ def test_cam_imu_report_two_cameras_end_to_end(tmp_path):
     assert all("jpg" not in c for c in side["scene"]["cams"]) and "/9j/" not in json.dumps(side)
     assert side["scene"]["cams"][0]["uvb"] == scene["cams"][0]["uvb"]
 
-    assert "<h1>OpenMVIS</h1>" in html and "Calibration process" in html
+    assert "</span>OpenMVIS</h1>" in html and "Calibration process" in html
     ids = _section_ids(html)
-    assert ids[-2:] == ["sec-results", "sec-config"]
+    assert ids[-1] == "sec-appendix"                                      # result files + config close the report,
+    i = html.index('id="sec-appendix"')                                   # inside the Appendix, in that order
+    assert i < html.index('id="sec-results"') < html.index('id="sec-config"')
     assert "cam_imu.json</code> &middot; JSON" in html
     assert "max_iterations: 40" in html[html.index('id="sec-config"'):]

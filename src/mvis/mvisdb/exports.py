@@ -135,6 +135,7 @@ def normalise_calib_yaml_pair(writer: dict, view: dict) -> None:
             cam.pop("image_size", None)
             cam.pop("rolling_shutter_readout_sigma", None)
         for e in d.get("reprojection_errors", {}).get("per_camera", []):
-            e.pop("max", None)
+            for k in ("max", "std", "inlier"):   # writer-only statistics, not in the store
+                e.pop(k, None)
         for tr in d.get("extrinsics", {}).get("transforms", []):
             tr.pop("so3", None)

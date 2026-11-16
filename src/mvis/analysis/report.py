@@ -45,7 +45,7 @@ def print_report(result: CalibrationResult) -> str:
     lines.append("=" * 60)
 
     for cam in result.cameras:
-        lines.append(f"\nCamera {cam.camera_id}:")
+        lines.append(f"\ncam{cam.camera_id}:")
         lines.append(f"  Model: pinhole + {cam.distortion_model}")
         lines.append(f"  Image size: {cam.image_size[0]} x {cam.image_size[1]}")
         lines.append(f"  Intrinsics:")
@@ -73,20 +73,21 @@ def print_report(result: CalibrationResult) -> str:
     if result.extrinsics:
         lines.append(f"\nExtrinsics (reference camera: {result.reference_camera}):")
         for ext in result.extrinsics:
-            lines.append(f"  Camera {ext.from_camera} -> Camera {ext.to_camera}:")
+            lines.append(f"  cam{ext.from_camera} -> cam{ext.to_camera}:")
             lines.append(f"    Rotation (SO3): [{ext.so3[0]:.6f}, {ext.so3[1]:.6f}, {ext.so3[2]:.6f}]")
             lines.append(f"    Translation: [{ext.translation[0]:.6f}, {ext.translation[1]:.6f}, {ext.translation[2]:.6f}]")
 
     if result.time_offsets:
         lines.append(f"\nTime offsets (ref camera: {result.reference_camera}):")
         for cam_id, dt in result.time_offsets.items():
-            lines.append(f"  Camera {cam_id}: dt = {dt:.6f} s")
+            lines.append(f"  cam{cam_id}: dt = {dt:.6f} s")
 
     lines.append(f"\nReprojection Errors:")
     for err in result.reprojection_errors:
-        lines.append(f"  Camera {err.camera_id}:")
+        lines.append(f"  cam{err.camera_id}:")
         lines.append(f"    Mean:   {err.mean:.4f} px")
         lines.append(f"    Median: {err.median:.4f} px")
+        lines.append(f"    Std:    {err.std:.4f} px")
         lines.append(f"    P90:    {err.p90:.4f} px")
         lines.append(f"    P95:    {err.p95:.4f} px")
         lines.append(f"    Max:    {err.max:.4f} px")

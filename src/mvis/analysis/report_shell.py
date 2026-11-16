@@ -409,7 +409,7 @@ class ReportStyle:
     tagline: str = "Open-source multi-visual-inertial sensor calibration"
     author_name: str = "Yulin Yang"
     author_email: str = "contact@openmvis.com"
-    author_url: str = "https://yangyulin.net"
+    author_url: str = "https://openmvis.com"
 
     # --- Section alternating backgrounds ---
     section_bg: str = "#FFFFFF"          # odd sections
@@ -652,6 +652,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     border-radius: 0 0 16px 16px;
 }
 .report-header h1 { color: #f1f5f9; font-size: 32px; }
+.report-header h1.brand { display: inline-flex; align-items: center; gap: 14px; }
+.report-header .brand-logo svg { width: 46px; height: 46px; display: block; border-radius: 12px; box-shadow: 0 0 0 1px rgba(148, 163, 184, .35), 0 4px 14px rgba(0, 0, 0, .35); }
 .report-header .subtitle { font-size: 16px; color: #94a3b8; font-weight: 400; }
 .report-header .meta-row {
     display: flex; justify-content: center; gap: 24px; margin-top: 12px;
@@ -685,6 +687,62 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .meta { color: var(--text-muted); font-size: 13px; }
 .note { color: var(--text-secondary); font-size: 13px; font-style: italic; }
 .desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.6; }
+
+.nt { text-transform: none; }
+ul.acc { margin: 4px 0 8px; padding-left: 20px; font-size: 13.5px; }
+/* --- Camera colour chip and graded table values --- */
+.chip { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px;
+    vertical-align: 1px; }
+.g { padding: 1px 6px; border-radius: 5px; }
+.g-good { background: rgba(22, 163, 74, .10); }
+.g-marginal { background: rgba(234, 179, 8, .18); }
+.g-poor { background: rgba(220, 38, 38, .14); }
+
+/* --- Per-camera tabs (cam_tabs): without JS every panel shows, stacked --- */
+.cam-tabs .tab-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 22px 0 12px;
+    padding: 10px 12px; border: 1px solid var(--primary-light); border-radius: 10px; background: var(--primary-bg); }
+.cam-tabs .tab-bar .tab-hint { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--primary-dark); margin-right: 4px; }
+.cam-tabs .tab-bar button { font: inherit; font-size: 13.5px; font-weight: 600; padding: 7px 16px; cursor: pointer;
+    border: 1px solid var(--primary-light); border-radius: 999px; background: var(--bg-card); color: var(--primary-dark);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .08); transition: background .15s, color .15s, box-shadow .15s, transform .1s; }
+.cam-tabs .tab-bar button:hover { border-color: var(--primary); box-shadow: 0 2px 6px rgba(37, 99, 235, .25);
+    transform: translateY(-1px); }
+.cam-tabs .tab-bar button.on { background: var(--primary); border-color: var(--primary); color: #fff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, .35); }
+.cam-tabs .tab-bar button.on .chip { box-shadow: 0 0 0 2px #fff; }
+.cam-tabs.js .cam-panel { display: none; }
+.cam-tabs.js .cam-panel.on { display: block; }
+
+/* --- Summary: one-line run facts under the tiles --- */
+.facts { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 0 0 18px; font-size: 13px;
+    color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.facts b { font-weight: 500; color: var(--text-muted); margin-right: 6px; text-transform: uppercase;
+    letter-spacing: .04em; font-size: 11px; }
+
+/* --- Summary: calibration parameters by sensor (param_folds) --- */
+.param-folds h3 { display: flex; align-items: center; gap: 12px; }
+.fold-all { font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--primary); background: var(--primary); color: #fff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, .3); transition: box-shadow .15s, transform .1s; }
+.fold-all:hover { box-shadow: 0 3px 10px rgba(37, 99, 235, .4); transform: translateY(-1px); }
+details.param-fold { margin: 8px 0; }
+details.param-fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.param-key { color: var(--text-secondary); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.param-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px 24px; }
+.param-group h5 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--primary-dark); }
+.param-group.wide { grid-column: 1 / -1; }
+table.kv { margin: 0; width: 100%; }
+table.kv tr:last-child th { border-bottom: none; }
+table.kv th { text-align: left; font-weight: 500; text-transform: none; letter-spacing: normal;
+    color: var(--text-secondary); font-size: 13px; padding: 5px 10px; width: 46%; border-bottom: 1px solid var(--border); }
+table.kv td { padding: 5px 10px; font-size: 13px; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pm { color: var(--text-secondary); font-size: .92em; }
+.v3 { display: inline-grid; grid-template-columns: repeat(3, minmax(64px, auto)); column-gap: 12px; justify-items: end; }
+.v3 > span { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; }
+.v3 small.pm { font-size: 11px; }
 
 /* --- Collapsible appendix --- */
 details.appendix { border: 1px solid var(--border); border-radius: 8px; margin: 12px 0; }
@@ -827,6 +885,12 @@ details.appendix > .appendix-content { padding: 16px; }
     h1, h2, h3 { color: black !important; }
     h2 { page-break-after: avoid; }
     a { color: inherit; text-decoration: none; }
+    /* long sections may break; their tables and figures stay whole */
+    .section { break-inside: auto; page-break-inside: auto; }
+    table, .plot-container, .param-group, .stat-row { break-inside: avoid; page-break-inside: avoid; }
+    .fold-all, .copy-btn, .cam-tabs .tab-bar { display: none !important; }
+    .cam-tabs.js .cam-panel { display: block !important; }
+    details > summary::before { display: none; }
     tbody tr:hover { background: transparent !important; }
     .badge { border: 1px solid #ccc; }
     .js-plotly-plot .modebar { display: none !important; }
@@ -835,6 +899,25 @@ details.appendix > .appendix-content { padding: 16px; }
 
 
 _JS = """
+// --- Printing: open every fold (parameters, appendix, result files) and restore it afterwards ---
+(function() {
+    var closed = [];
+    window.addEventListener('beforeprint', function() {
+        closed = Array.prototype.filter.call(document.querySelectorAll('details'), function(d) { return !d.open; });
+        closed.forEach(function(d) { d.open = true; });
+    });
+    window.addEventListener('afterprint', function() { closed.forEach(function(d) { d.open = false; }); closed = []; });
+})();
+// --- Expand all / Collapse all on the Summary's parameter folds ---
+document.addEventListener('click', function(e) {
+    var b = e.target.closest && e.target.closest('.fold-all');
+    if (!b) return;
+    var box = b.closest('.param-folds'); if (!box) return;
+    var folds = box.querySelectorAll('details.param-fold');
+    var open = b.textContent.indexOf('Expand') === 0;
+    folds.forEach(function(d) { d.open = open; });
+    b.textContent = open ? 'Collapse all' : 'Expand all';
+});
 // --- Copy buttons on copy_block() code blocks ---
 document.addEventListener('click', function(e) {
     var b = e.target.closest && e.target.closest('.copy-btn');
@@ -847,6 +930,52 @@ document.addEventListener('click', function(e) {
     });
 });
 document.addEventListener('DOMContentLoaded', function() {
+    // --- Per-camera tabs: a tab bar over .cam-panel blocks; TOC links / #hash open their tab ---
+    document.querySelectorAll('.cam-tabs').forEach(function(box) {
+        var panels = Array.prototype.slice.call(box.querySelectorAll(':scope > .cam-panel'));
+        if (panels.length < 2) return;
+        var bar = document.createElement('div'); bar.className = 'tab-bar';
+        var hint = document.createElement('span'); hint.className = 'tab-hint';
+        hint.textContent = 'Select a camera:'; bar.appendChild(hint);
+        function show(i) {
+            panels.forEach(function(p, k) { p.classList.toggle('on', k === i); });
+            Array.prototype.forEach.call(bar.querySelectorAll('button'), function(b, k) { b.classList.toggle('on', k === i); });
+        }
+        panels.forEach(function(p, i) {
+            var b = document.createElement('button'); b.type = 'button';
+            b.innerHTML = (p.querySelector('h3 .chip') ? p.querySelector('h3 .chip').outerHTML : '') + p.dataset.label;
+            b.addEventListener('click', function() { show(i); });
+            bar.appendChild(b);
+        });
+        box.insertBefore(bar, box.firstChild); box.classList.add('js'); show(0);
+        function fromHash() {
+            var i = panels.findIndex(function(p) { return '#' + p.id === location.hash; });
+            if (i >= 0) { show(i); bar.scrollIntoView({block: 'start'}); }
+        }
+        window.addEventListener('hashchange', fromHash); fromHash();
+    });
+    // --- Numeric columns: right-aligned, tabular digits, header aligned with its numbers ---
+    var NUM = /^[-+]?[\d.,]+(e[-+]?\d+)?( ?(±|\/) ?[-+]?[\d.,]+(e[-+]?\d+)?)*( ?(px|mm|ms|rad|rad\/s|m\/s²|s|°|%|kB|MB))?$/i;
+    document.querySelectorAll('table').forEach(function(t) {
+        var rows = Array.prototype.slice.call(t.rows);
+        if (rows.length < 2) return;
+        var ncol = Math.max.apply(null, rows.map(function(r) { return r.cells.length; }));
+        for (var c = 0; c < ncol; c++) {
+            var cells = [], blanks = [], head = null, ok = true;
+            rows.forEach(function(r) {
+                var x = r.cells[c]; if (!x) return;
+                if (x.tagName === 'TH') { if (!head) head = x; return; }
+                var v = x.textContent.replace(/\u2212/g, '-').trim();
+                if (v === '' || v === '—' || v === '-') { blanks.push(x); return; }
+                if (!NUM.test(v)) ok = false; else cells.push(x);
+            });
+            if (ok && cells.length) cells = cells.concat(blanks);
+            if (ok && cells.length) {
+                cells.forEach(function(x) { x.classList.add('num'); });
+                if (head && head.parentNode === rows[0]) head.classList.add('num');
+            }
+        }
+    });
     // --- Smooth scroll for TOC links ---
     document.querySelectorAll('#toc a').forEach(function(a) {
         a.addEventListener('click', function(e) {
@@ -917,6 +1046,61 @@ def _build_toc(toc_entries: list[tuple[str, str]]) -> str:
         + "\n".join(links)
         + "\n</nav>"
     )
+
+
+# One look for every figure in the reports: font, sizes, light grid, no top/right spines, and the
+# camera colours of the 3D views (views.spec.COLORS) as the colour cycle.
+REPORT_RC = {
+    "font.family": ["Inter", "Helvetica Neue", "Arial", "DejaVu Sans"],
+    "font.size": 10, "axes.titlesize": 11, "axes.titleweight": "semibold", "axes.labelsize": 10,
+    "xtick.labelsize": 9, "ytick.labelsize": 9, "legend.fontsize": 9, "legend.frameon": False,
+    "axes.spines.top": False, "axes.spines.right": False, "axes.edgecolor": "#94A3B8",
+    "axes.grid": True, "grid.color": "#CBD5E1", "grid.alpha": 0.5, "grid.linewidth": 0.6,
+    "axes.prop_cycle": None,  # set below from the views' camera colours
+    "figure.dpi": 100, "savefig.bbox": "tight",
+}
+
+
+def report_plot_style(fn):
+    """Run a report generator under REPORT_RC, so every figure it draws shares the look."""
+    import functools
+
+    @functools.wraps(fn)
+    def run(*a, **k):
+        import matplotlib.pyplot as plt
+        from cycler import cycler
+        from mvis.analysis.views.spec import COLORS
+        rc = dict(REPORT_RC, **{"axes.prop_cycle": cycler(color=COLORS)})
+        with plt.rc_context(rc):
+            return fn(*a, **k)
+    return run
+
+
+def cam_label(c: int) -> str:
+    """'camN' with its colour chip (the 3D views' camera colour), for a table's first column."""
+    from mvis.analysis.views.spec import COLORS
+    return f"<span class='chip' style='background:{COLORS[int(c) % len(COLORS)]}'></span>cam{int(c)}"
+
+
+def graded(text: str, grade) -> str:
+    """A table value tinted by its display grade (good / marginal / poor); plain when ungraded."""
+    return f"<span class='g g-{grade}'>{text}</span>" if grade else text
+
+
+# The OpenMVIS logo, as on openmvis.com (mvis_pages site/src/assets/logo-placeholder.svg): inline, so a
+# report stays one self-contained file; also the page's favicon.
+LOGO_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" '
+            'aria-label="OpenMVIS logo"><rect x="2" y="2" width="60" height="60" rx="12" fill="#0f172a"/>'
+            '<circle cx="22" cy="32" r="9" fill="none" stroke="#38bdf8" stroke-width="3"/>'
+            '<circle cx="22" cy="32" r="3" fill="#38bdf8"/>'
+            '<rect x="36" y="22" width="20" height="20" rx="3" fill="none" stroke="#bae6fd" stroke-width="2.5"/>'
+            '<line x1="36" y1="32" x2="56" y2="32" stroke="#bae6fd" stroke-width="2"/>'
+            '<line x1="46" y1="22" x2="46" y2="42" stroke="#bae6fd" stroke-width="2"/></svg>')
+
+
+def _logo_favicon() -> str:
+    import base64
+    return "data:image/svg+xml;base64," + base64.b64encode(LOGO_SVG.encode()).decode()
 
 
 def folded(summary: str, body: str) -> str:
@@ -1023,12 +1207,13 @@ def render_page(title, toc_entries, sections, style=REPORT_STYLE):
 <head>
 <meta charset="utf-8">
 <title>{style.brand_name} &mdash; {title}</title>
+<link rel="icon" type="image/svg+xml" href="{_logo_favicon()}">
 <style>{css}</style>
 {plotly_js}
 </head>
 <body>
 <div class="report-header">
-    <h1>{style.brand_name}</h1>
+    <h1 class="brand"><span class="brand-logo">{LOGO_SVG}</span>{style.brand_name}</h1>
     <div class="subtitle">{title}</div>
     <div class="meta-row">
         <span>Generated {now_str}</span>
@@ -1041,7 +1226,7 @@ def render_page(title, toc_entries, sections, style=REPORT_STYLE):
 <div class="report-footer">
     <div class="footer-brand">{style.brand_name}</div>
     <div class="footer-info">
-        {style.tagline} by {style.author_name}
+        {style.tagline}
         &nbsp;&middot;&nbsp;
         <a href="mailto:{style.author_email}">{style.author_email}</a>
         &nbsp;&middot;&nbsp;

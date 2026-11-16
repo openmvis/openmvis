@@ -45,7 +45,8 @@ import numpy as np
 from mvis.calibration.factors.lie_groups import log_so3
 from mvis.core.camera_models import KB_THETA_MODELS, dist_names
 from mvis.imu import CALYX
-from mvis.io.result_schema import cam_imu_sensor_rows, imu_diag
+from mvis.calibration.reproj_stats import corner_stats
+from mvis.io.result_schema import calyx_dw_qr, cam_imu_sensor_rows, imu_diag
 
 
 def _cam_rows(result):
@@ -77,6 +78,10 @@ def _cam_rows(result):
             reproj_rms_px=float(e.get("reproj_rms_px", float("nan"))),
             reproj_median_px=e.get("reproj_median_px"),
             reproj_p95_px=e.get("reproj_p95_px"),
+            reproj_mean_px=e.get("reproj_mean_px"),
+            reproj_std_px=e.get("reproj_std_px"),
+            reproj_p90_px=e.get("reproj_p90_px"),
+            reproj_max_px=e.get("reproj_max_px"),
             n_frames=int(e.get("n_frames", 0)),
             valid_domain=_kb_domain(cal, e),
             corner_accounting=e.get("corner_accounting"),
@@ -85,6 +90,18 @@ def _cam_rows(result):
             b = cr["baseline_m"]
             row["baseline_mm"] = (1e3 * b).tolist()
             row["baseline_norm_mm"] = float(1e3 * np.linalg.norm(b))
+            if e.get("T_CtoC0_sigma") is not None:          # [rot(3), trans(3)] of the joint marginal
+                row["baseline_sig_mm"] = (1e3 * np.asarray(e["T_CtoC0_sigma"], float)[3:6]).tolist()
+        try:
+            from mvis.analysis.views.geometry import fov_deg
+            from mvis.calibration.factors.camera_projection import k_cal_vec
+            size = e.get("image_size")
+            if size:
+                intr = np.asarray(cal.intr, float)
+                row["fov"] = fov_deg(cal.model, k_cal_vec(cal.model, intr[:4], intr[4:]), size)
+                row["image_size"] = [int(size[0]), int(size[1])]
+        except Exception:                                   # a model the views can't trace: no FOV row
+            pass
         rows.append(row)
     return rows
 
@@ -146,6 +163,7 @@ def _imu_block(result):
         if ii.model == CALYX:
             R_wtoI, _ = ii.decompose()
             base["R_wtoI_rad"] = np.asarray(log_so3(R_wtoI), float).tolist()
+            base["Dw_decomp"] = _dw_decomp(ii.Dw())
     aux = []
     for ar in sensors["aux"]:
         m = ar["entry"]
@@ -168,6 +186,8 @@ def _imu_block(result):
             ii = ar["intr"]
             a["Dw_diag"], a["Da_diag"] = imu_diag(ii)
             a["Dw"], a["Da"] = ii.Dw().tolist(), ii.Da().tolist()
+            if ii.model == CALYX:
+                a["Dw_decomp"] = _dw_decomp(ii.Dw())
             a["Tg"] = ii.Tg().tolist()
         aux.append(a)
     return base, aux
@@ -232,7 +252,159 @@ def _ref_deltas(rows, reference):
     return out
 
 
+# ----------------------------------------------------------- summary parameter folds
+def _config_solve(config) -> dict:
+    """The run's solve settings as a dict, from a config dict, object or its YAML source text."""
+    if config is None:
+        return {}
+    if isinstance(config, str):
+        import yaml
+        try:
+            config = yaml.safe_load(config) or {}
+        except Exception:
+            return {}
+    solve = config.get("solve") if isinstance(config, dict) else getattr(config, "solve", None)
+    if solve is None:
+        return {}
+    return solve if isinstance(solve, dict) else {k: getattr(solve, k) for k in dir(solve) if k.startswith("sigma")}
+
+
+def _calib_yaml(result_files) -> dict | None:
+    """The run's cam_imu_calib.yaml, for each sensor's Copy block; None when not among the result files."""
+    import os
+    import yaml
+    for pth in result_files or []:
+        if str(pth).endswith("_calib.yaml") and os.path.exists(pth):
+            try:
+                return yaml.safe_load(open(pth))
+            except Exception:
+                return None
+    return None
+
+
+def _fov_text(fov) -> str | None:
+    if not fov or fov.get("h") is None or fov.get("v") is None:
+        return None
+    return f"{fov['h']:.0f}° × {fov['v']:.0f}°"
+
+
+def _cam_fold(r, calib_doc) -> str:
+    from mvis.analysis.param_folds import group, num, sensor_fold, val, vec, yaml_block
+    names = r.get("dist_names") or [f"d{i}" for i in range(len(r["dist"]))]
+    dsig = r.get("dist_sig") or [None] * len(r["dist"])
+    isig = r.get("intr_sig") or [None] * 4
+    med, p95 = r.get("reproj_median_px"), r.get("reproj_p95_px")
+    key = (f"{r['model']} · fx {num(r['fx'], 'px2')} · td {num(r['td_ms'], 'ms')} ms · lever "
+           f"{num(r['lever_norm_mm'], 'mm')} mm"
+           + (f" · reproj median / P95 {num(med, 'px')} / {num(p95, 'px')} px" if med is not None else ""))
+    groups = [
+        group("Intrinsics", [("model", r["model"]),
+                             ("fx", val(r["fx"], "px2", isig[0])), ("fy", val(r["fy"], "px2", isig[1])),
+                             ("cx", val(r["cx"], "px2", isig[2])), ("cy", val(r["cy"], "px2", isig[3])),
+                             *[(n, val(v, "coef", s)) for n, v, s in zip(names, r["dist"], dsig)],
+                             ("image size", f"{r['image_size'][0]} × {r['image_size'][1]}" if r.get("image_size") else None),
+                             ("field of view H × V", _fov_text(r.get("fov")))]),
+        group("Time", [("td (t_imu = t_cam + td)", val(r["td_ms"], "ms", r["td_sig_ms"])),
+                       ("readout", "global shutter" if r["tr_pinned"] and abs(r["tr_ms"]) < 1e-3   # < 1 µs
+                        else val(r["tr_ms"], "ms") + (" (pinned)" if r["tr_pinned"] else ""))]),
+        group("Camera in IMU (T_C→I)", [("lever x, y, z (mm)", vec(r["lever_mm"], "mm", r["lever_sig_mm"])),
+                                        ("|lever|", val(r["lever_norm_mm"], "mm")),
+                                        ("log(R) x, y, z (rad)", vec(r["rot_rad"], "rad", r["rot_sig_rad"])),
+                                        ("|rotation|", val(r["rot_angle_rad"], "rad"))]),
+        group(f"Rig (cam{r['id']} → cam0)", [("baseline x, y, z (mm)", vec(r["baseline_mm"], "mm", r.get("baseline_sig_mm"))),
+                                            ("|baseline|", val(r["baseline_norm_mm"], "mm"))]
+              if "baseline_mm" in r else []),
+        group("Reprojection", [("mean", val(r.get("reproj_mean_px"), "px")), ("median", val(med, "px")),
+                               ("std", val(r.get("reproj_std_px"), "px")), ("P90", val(r.get("reproj_p90_px"), "px")),
+                               ("P95", val(p95, "px")), ("max", val(r.get("reproj_max_px"), "px")),
+                               ("frames", f"{r['n_frames']:,}" if r.get("n_frames") else None)]),
+    ]
+    blk = next((c for c in (calib_doc or {}).get("cameras", []) if c.get("id") == r["id"]), None)
+    return sensor_fold(f"cam{r['id']}", key, groups, yaml_block(blk))
+
+
+def _imu_fold(m, role: str, solve: dict, chi2, calib_doc, idx: int) -> str:
+    from mvis.analysis.param_folds import group, num, sensor_fold, val, vec, yaml_block
+    dd = m.get("Dw_decomp")
+    model = m.get("imu_model", "—" if role == "base" else "")
+    key_parts = [model] if model else []
+    if m.get("t_ga") is not None:
+        key_parts.append(f"t_ga {num(1e3 * m['t_ga'], 'ms')} ms")
+    if dd:
+        key_parts.append("gyro scale " + " / ".join(f"{v:.3f}" for v in dd["scale"]))
+    elif m.get("Dw_diag"):
+        key_parts.append("Dw diag " + " / ".join(f"{v:.3f}" for v in m["Dw_diag"]))
+    if chi2 is not None:
+        key_parts.append(f"χ²/dof {chi2:.3f}")
+    if role != "base" and m.get("td_ms") is not None:
+        key_parts.append(f"td {num(m['td_ms'], 'ms')} ms")
+    t_ga = m.get("t_ga")
+    t_ga_sig = m.get("t_ga_sigma")
+    groups = [
+        group("Model", [("IMU model", model or None),
+                        ("intrinsics", "pinned" if m.get("pinned") else ("estimated" if m.get("Dw") else None))]),
+        group("Biases", [("b_g mean (rad/s)", vec(m.get("b_g"), "rads") if m.get("b_g") else None),
+                         ("b_g drift (rad/s)", vec(m.get("b_g_drift"), "rads") if m.get("b_g_drift") else None),
+                         ("b_a mean (m/s²)", vec(m.get("b_a"), "mps2") if m.get("b_a") else None),
+                         ("b_a drift (m/s²)", vec(m.get("b_a_drift"), "mps2") if m.get("b_a_drift") else None)]),
+        group("Gyro", [("Dw diag", vec(m["Dw_diag"], "scale") if m.get("Dw_diag") else None),
+                       ("scale diag(U)", vec(dd["scale"], "scale") if dd else None),
+                       ("shear U01 / U02 / U12", vec(dd["shear"], "coef") if dd else None),
+                       ("misalignment log(R) (rad)", vec(dd["rotvec_rad"], "rad") if dd else None),
+                       ("|misalignment|", val(dd["angle_rad"], "rad") if dd else None)]),
+        group("Accel", [("Da diag", vec(m["Da_diag"], "scale") if m.get("Da_diag") else None),
+                        ("R_wtoI log(R) (rad)", vec(m["R_wtoI_rad"], "rad") if m.get("R_wtoI_rad") else None)]),
+        group("Time", [("t_ga gyro → accel", val(1e3 * t_ga, "ms", 1e3 * t_ga_sig if t_ga_sig else None)
+                        if t_ga is not None else None),
+                       ("td (aux, to imu0)", val(m.get("td_ms"), "ms") if role != "base" else None)]),
+        group("In base IMU (T_Is→I)", [("lever x, y, z (mm)", vec(m["p_IsinI_mm"], "mm")),
+                                       ("log(R) x, y, z (rad)", vec(m["rot_rad"], "rad")),
+                                       ("|rotation|", val(m["rot_angle_rad"], "rad"))]
+              if role != "base" and m.get("p_IsinI_mm") is not None else []),
+        group("Noise used (solve config)", [(k, f"{float(solve[k]):.3g}") for k in ("sigma_g", "sigma_bg", "sigma_a", "sigma_ba")
+                                            if role == "base" and solve.get(k) is not None]
+              + ([("IMU χ²/dof", f"{chi2:.3f}")] if chi2 is not None else [])),
+    ]
+    imus = (calib_doc or {}).get("imus") or []
+    blk = imus[idx] if idx < len(imus) else None
+    return sensor_fold(f"{m.get('name', 'imu')} ({role})", " · ".join(key_parts), groups, yaml_block(blk))
+
+
+def _param_folds_html(rows, base, aux, d, config, result_files) -> str:
+    """Summary: every calibrated parameter, one closed fold per sensor (cameras, base IMU, aux IMUs)."""
+    from mvis.analysis.param_folds import folds_block
+    doc = _calib_yaml(result_files)
+    solve = _config_solve(config)
+    folds = [_cam_fold(r, doc) for r in rows]
+    folds.append(_imu_fold(base, "base", solve, d.get("imu_chi2_dof"), doc, 0))
+    folds += [_imu_fold(a, "aux", {}, a.get("chi2_dof"), doc, i + 1) for i, a in enumerate(aux)]
+    return folds_block(folds)
+
+
 # --------------------------------------------------------------------------- text
+def _text_reproj_line(r) -> str:
+    """One camera's reprojection line: mean / median / std (Kalibr's per-camera three) / p90 / p95 /
+    max over all corners where the result has them, else median / p95, else RMS."""
+    n = f"({r['n_frames']} frames)"
+    if r.get("reproj_mean_px") is not None and r.get("reproj_std_px") is not None:
+        tail = (f" / p90 {r['reproj_p90_px']:.3f}" if r.get("reproj_p90_px") is not None else "") + \
+               f" / p95 {r['reproj_p95_px']:.3f}" + \
+               (f" / max {r['reproj_max_px']:.2f}" if r.get("reproj_max_px") is not None else "")
+        return (f"  reproj mean {r['reproj_mean_px']:.3f} / med {r['reproj_median_px']:.3f} / std "
+                f"{r['reproj_std_px']:.3f}{tail} px  {n}")
+    if r.get("reproj_median_px") is not None:
+        return f"  reproj med {r['reproj_median_px']:.3f} / p95 {r['reproj_p95_px']:.3f} px  {n}"
+    return f"  reproj {r['reproj_rms_px']:.3f} px  {n}"
+
+
+def _text_dw_decomp(dd) -> list[str]:
+    """A calyx Dw's R · U split (Dw_diag mixes the rotation in, so it is not the scale)."""
+    return [f"  Dw = R·U (calyx): scale diag(U) " + " ".join(f"{x:.5f}" for x in dd["scale"])
+            + "   shear U01/U02/U12 " + " ".join(f"{x:+.5f}" for x in dd["shear"]),
+            f"  gyro misalignment log(R) (rad): " + " ".join(f"{x:+.6f}" for x in dd["rotvec_rad"])
+            + f"  |{dd['angle_rad']:.6f}|"]
+
+
 def cam_imu_text_report(result, reference=None) -> str:
     rows = _cam_rows(result)
     base, aux = _imu_block(result)
@@ -247,11 +419,8 @@ def cam_imu_text_report(result, reference=None) -> str:
          f"chi2/dof  cam {d.get('cam_chi2_dof', float('nan')):.2f}   "
          f"imu {d.get('imu_chi2_dof', float('nan')):.2f}"]
     for r in rows:
-        L += ["", f"Camera {r['id']}  ({r['model']})",
-              (f"  reproj med {r['reproj_median_px']:.3f} / p95 "
-               f"{r['reproj_p95_px']:.3f} px  ({r['n_frames']} frames)"
-               if r.get('reproj_median_px') is not None else
-               f"  reproj {r['reproj_rms_px']:.3f} px  ({r['n_frames']} frames)"),
+        L += ["", f"cam{r['id']}  ({r['model']})",
+              _text_reproj_line(r),
               f"  intr: fx {r['fx']:.2f} fy {r['fy']:.2f} cx {r['cx']:.2f} cy {r['cy']:.2f}",
               f"  dist{_dist_label(r)}: " + _dist_values(r),
               f"  td: {r['td_ms']:+.3f} ms (σ {r['td_sig_ms']:.3f})   "
@@ -278,6 +447,8 @@ def cam_imu_text_report(result, reference=None) -> str:
     else:
         L += [f"  Dw_diag (gyro scale):  " + " ".join(f"{x:.5f}" for x in base["Dw_diag"]),
               f"  Da_diag (accel scale): " + " ".join(f"{x:.5f}" for x in base["Da_diag"])]
+        if base.get("Dw_decomp"):
+            L += _text_dw_decomp(base["Dw_decomp"])
     if base.get("t_ga") is not None:
         sig = base.get("t_ga_sigma")
         L.append(f"  t_ga gyro->accel: {base['t_ga'] * 1e3:+.3f} ms"
@@ -304,6 +475,8 @@ def cam_imu_text_report(result, reference=None) -> str:
         if "Dw_diag" in a:
             L.append("  Dw_diag: " + " ".join(f"{x:.5f}" for x in a["Dw_diag"]) +
                      "   Da_diag: " + " ".join(f"{x:.5f}" for x in a["Da_diag"]))
+            if a.get("Dw_decomp"):
+                L += _text_dw_decomp(a["Dw_decomp"])
     deltas = _ref_deltas(rows, reference)
     if deltas:
         L += ["", f"vs reference: {deltas['label']}"]
@@ -324,7 +497,7 @@ def cam_imu_text_report(result, reference=None) -> str:
 
 # --------------------------------------------------------------------------- html
 from mvis.analysis.report_shell import (  # shared shell  # noqa: E402
-    badge as _badge, html_table as _tbl, render_page, stat_box as _stat)
+    badge as _badge, cam_label, graded, html_table as _tbl, render_page, report_plot_style, stat_box as _stat)
 from mvis.analysis.verdict import GRADE_DISPLAY, grade  # noqa: E402
 
 
@@ -555,12 +728,37 @@ def _mat_html(name, M, fmt="{:+.6f}"):
             f'vertical-align:top"><b>{name}</b><table>{rows}</table></div>')
 
 
+def _dw_decomp(Dw) -> dict:
+    """A calyx Dw split as Dw = R · U (`result_schema.calyx_dw_qr`): R the gyro misalignment
+    rotation (matrix, log(R) in rad and its angle), U upper-triangular (per-axis scale on its
+    diagonal, cross-coupling above it). The same split cam_imu.json's Dw_scale / Dw_shear /
+    gyro_misalign_rotvec come from."""
+    R, U = calyx_dw_qr(Dw)
+    rv = np.asarray(log_so3(R), float)
+    return dict(R=R.tolist(), U=U.tolist(), scale=np.diag(U).tolist(),
+                shear=[float(U[0, 1]), float(U[0, 2]), float(U[1, 2])],
+                rotvec_rad=rv.tolist(), angle_rad=float(np.linalg.norm(rv)))
+
+
+def _dw_decomp_html(dd) -> str:
+    return ("<div style=\"display:inline-block;vertical-align:top\"><b>Dw = R · U (calyx)</b>"
+            + _tbl(["", "x", "y", "z"], [
+                ["scale diag(U)", *[f"{v:+.6f}" for v in dd["scale"]]],
+                ["shear U01 / U02 / U12", *[f"{v:+.6f}" for v in dd["shear"]]],
+                ["misalignment log(R) (rad)", *[f"{v:+.6f}" for v in dd["rotvec_rad"]]]])
+            + f"<p class='note'>Misalignment angle |log(R)| = {dd['angle_rad']:.6f} rad. R is the gyro "
+            + "axes' rotation; U holds the per-axis scale and the cross-coupling.</p></div>"
+            + _mat_html("R (misalignment)", dd["R"]) + _mat_html("U (scale + shear)", dd["U"]))
+
+
 def _imu_intrinsics_html(entry):
-    """Full IMU-intrinsic matrices (Dw / Da / Tg) for a base or aux entry."""
+    """Full IMU-intrinsic matrices (Dw / Da / Tg) for a base or aux entry; for a calyx IMU,
+    Dw's R · U split under it."""
     if "Dw" not in entry:
         return ""
     return ("<h4>IMU intrinsics (full)</h4>"
             + _mat_html("Dw (gyro)", entry["Dw"])
+            + (_dw_decomp_html(entry["Dw_decomp"]) if entry.get("Dw_decomp") else "")
             + _mat_html("Da (accel)", entry["Da"])
             + _mat_html("Tg (g-sensitivity)", entry.get("Tg", np.zeros((3, 3)))))
 
@@ -643,16 +841,20 @@ def _reproj_table_html(d, board) -> str:
         return ""
     show_tags = (not _board_tags(board)[2]
                  and all(cd.get("n_tags") is not None for _c, cd, _e in cams))
-    cols = (["Camera", "Mean (px)", "Median (px)", "P90 (px)", "P95 (px)", "Max (px)"]
+    cols = (["Camera", "Mean (px)", "Median (px)", "Std (px)", "P90 (px)", "P95 (px)", "Max (px)"]
             + (["Tags"] if show_tags else []) + ["Corners"])
-    rows = [[f"cam{c}", f"{e.mean():.3f}", f"{np.median(e):.3f}", f"{np.percentile(e, 90):.3f}",
-             f"{np.percentile(e, 95):.3f}", f"{e.max():.1f}"]
-            + ([f"{cd['n_tags']:,}"] if show_tags else []) + [f"{len(e):,}"]
-            for c, cd, e in cams]
-    return (_tbl(cols, rows)
-            + "<p class='note'>Per-corner error norms at the solution; guard-skipped corners left out"
+    stats = [(c, cd, corner_stats(e)) for c, cd, e in cams]
+    rows = [[cam_label(c), f"{s['mean']:.3f}", graded(f"{s['median']:.3f}", _grade(s['median'], *_MED_GRADE)),
+             f"{s['std']:.3f}", f"{s['p90']:.3f}", graded(f"{s['p95']:.3f}", _grade(s['p95'], *_P95_GRADE)),
+             f"{s['max']:.2f}"]
+            + ([f"{cd['n_tags']:,}"] if show_tags else []) + [f"{s['n_corners']:,}"]
+            for c, cd, s in stats]
+    html = (_tbl(cols, rows)
+            + "<p class='note'>Per-corner error norms at the solution, every corner the solve used (as Kalibr pools "
+            + "them); guard-skipped corners left out"
             + ("; Tags = distinct tags seen per frame, summed over frames" if show_tags else "")
-            + ".</p>")
+            + ". Std is the population std, as Kalibr prints it.</p>")
+    return html
 
 
 def _reproj_camera_sections(d, board) -> list[tuple[int, str]]:
@@ -760,11 +962,62 @@ def _plot_bias_evolution(result):
     return fig
 
 
+_IMU_BLOCK_INFO = {          # label, raw unit, raw format
+    "theta": ("rotation θ", "rad", "{:.2e}"), "p": ("position p", "m", "{:.2e}"),
+    "v": ("velocity v", "m/s", "{:.2e}"), "bg": ("gyro bias step Δb_g", "rad/s", "{:.2e}"),
+    "ba": ("accel bias step Δb_a", "m/s²", "{:.2e}")}
+_CHI2_3_95 = 2.7955          # sqrt of the chi-square(3) 95 % quantile: |W r_b| above it is unusual
+
+
 def _imu_residual_body(d):
-    """Per-interval IMU cost + cost split by residual rows [theta,p,v,bg,ba]
-    (board mode records these; feature mode degrades to nothing)."""
+    """The IMU preintegration residual per state block — rotation, position, velocity, gyro and accel
+    bias steps — over the run (one row per block, whitened |W r_b| per interval) and a table of each
+    block's raw residual in its unit, its normalized residual and its share of the IMU cost. Falls back
+    to the whole-state per-interval cost for results recorded before the per-block diagnostic."""
     parts = []
-    ic = d.get("imu_interval_cost")
+    blk = d.get("imu_block_residuals")
+    split = d.get("imu_cost_split") if isinstance(d.get("imu_cost_split"), dict) else {}
+    tot = sum(split.values()) or 1.0
+    if isinstance(blk, dict) and blk.get("white") is not None and len(blk["white"]):
+        import matplotlib.pyplot as plt
+        names = list(blk["blocks"])
+        W = np.asarray(blk["white"], float)
+        R = np.asarray(blk["raw"], float)
+        dt = np.asarray(blk.get("dt"), float)
+        t = (np.concatenate([[0.0], np.cumsum(dt[:-1])]) if np.all(np.isfinite(dt)) else np.arange(len(W)))
+        xlab = "time from the first state (s)" if np.all(np.isfinite(dt)) else "state interval"
+        fig, axes = plt.subplots(len(names), 1, figsize=(12, 1.55 * len(names) + 0.6), sharex=True)
+        for ax, j, name in zip(np.atleast_1d(axes), range(len(names)), names):
+            ax.plot(t, W[:, j], lw=0.9, color="C0")
+            ax.axhline(_CHI2_3_95, color="#DC2626", ls="--", lw=0.8)
+            ax.axhline(float(np.nanmedian(W[:, j])), color="#FF9800", ls=":", lw=0.9)
+            ax.set_ylabel(_IMU_BLOCK_INFO.get(name, (name,))[0].split(" ")[0] + "\n|W r|", fontsize=9)
+            ax.set_ylim(bottom=0)
+        np.atleast_1d(axes)[-1].set_xlabel(xlab)
+        np.atleast_1d(axes)[0].set_title("Normalized IMU residual per state block (dashed: χ²₃ 95 %, dotted: median)",
+                                         loc="left")
+        fig.tight_layout()
+        parts.append("<h3>Per state block over the run</h3>" + _fig_html(fig))
+        rows = []
+        for j, name in enumerate(names):
+            label, unit, fmt = _IMU_BLOCK_INFO.get(name, (name, "", "{:.3g}"))
+            r = R[:, j][np.isfinite(R[:, j])]
+            w = W[:, j][np.isfinite(W[:, j])]
+            raw_cells = ([fmt.format(np.median(r)), fmt.format(np.percentile(r, 95)), fmt.format(r.max())]
+                         if r.size else ["—"] * 3)
+            rows.append([label, unit, *raw_cells,
+                         f"{np.median(w):.2f}", f"{np.percentile(w, 95):.2f}",
+                         f"{100 * np.mean(w > _CHI2_3_95):.1f}%",
+                         f"{100 * split.get(name, 0.0) / tot:.1f}%" if split else "—"])
+        parts.append("<h3>Per state block</h3>" + _tbl(
+            ["Block", "Unit", "Raw median", "Raw P95", "Raw max", "|W r| median", "|W r| P95", "Over χ²₃ 95 %",
+             "Cost share"], rows)
+            + "<p class='note'>Raw: the block's residual per interval in its unit (rotation and velocity "
+              "against the integrated gyro and accelerometer, the bias steps between states). |W r|: the same "
+              "whitened by the solve's IMU noise; with the noise right it is about √3 ≈ 1.7, and about 5 % of "
+              "intervals exceed the χ²₃ 95 % line.</p>")
+        return "".join(parts)
+    ic = d.get("imu_interval_cost")                 # older results: the whole IMU state only
     if ic is not None and len(ic):
         import matplotlib.pyplot as plt
         ic = np.asarray(ic, float).ravel()
@@ -774,9 +1027,7 @@ def _imu_residual_body(d):
         ax.set_ylabel("IMU cost")
         fig.tight_layout()
         parts.append("<h3>Per-interval cost</h3>" + _fig_html(fig))
-    split = d.get("imu_cost_split")
-    if isinstance(split, dict) and split:
-        tot = sum(split.values()) or 1.0
+    if split:
         parts.append("<h3>Cost split</h3>" + _tbl(
             ["residual rows", "cost", "share"],
             [[k, f"{v:.1f}", f"{100 * v / tot:.1f}%"] for k, v in split.items()]))
@@ -797,6 +1048,7 @@ def _timing_body(d):
     return _tbl(["stage", "s", "share"], rows)
 
 
+@report_plot_style
 def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
                         board=None, landmarks=None, config=None,
                         cam_data=None, result_files=None, views_out=None) -> str:
@@ -826,39 +1078,31 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
     imu_chi2 = float(d.get("imu_chi2_dof", float("nan")))
     status_badge = ('<span class="badge badge-good">&#10003; OK</span>' if result.ok
                     else '<span class="badge badge-poor">&#10007; FAILED</span>')
+    # each number once: the tiles carry the fit with its grade; a one-line strip the run's facts
     stat_html = (
         '<div class="stat-row">'
         + _stat(status_badge, "Status")
         + (_stat(f"{med:.3f} px", "Reproj median", _grade(med, *_MED_GRADE))
-           + _stat(f"{p95:.3f} px", "Reproj p95", _grade(p95, *_P95_GRADE))
+           + _stat(f"{p95:.3f} px", "Reproj P95", _grade(p95, *_P95_GRADE))
            if med is not None and p95 is not None else
            _stat(f"{reproj:.3f} px", "Reproj RMS", _grade(reproj, *_RMS_GRADE)))
+        + _stat(f"{cam_chi2:.3f}", "Camera <span class='nt'>χ²/dof</span>", _grade(cam_chi2, *_CHI2_GRADE))
+        + _stat(f"{imu_chi2:.3f}", "IMU <span class='nt'>χ²/dof</span>", _grade(imu_chi2, *_CHI2_GRADE))
         + _stat(len(rows), "Cameras")
         + _stat(1 + len(aux), "IMUs")
-        + _stat(d.get("n_states", 0), "States")
         + _stat(d.get("iterations", 0), "Iterations")
         + "</div>")
-    diag_rows = ([
-        ["Reprojection median (px)", f"{med:.4f}", _badge(_grade(med, *_MED_GRADE))],
-        ["Reprojection p95 (px)", f"{p95:.4f}", _badge(_grade(p95, *_P95_GRADE))],
-    ] if med is not None and p95 is not None else [
-        ["Reprojection RMS (px)", f"{reproj:.4f}", _badge(_grade(reproj, *_RMS_GRADE))],
-    ]) + [
-        ["Camera χ²/dof", f"{cam_chi2:.3f}", _badge(_grade(cam_chi2, *_CHI2_GRADE))],
-        ["IMU χ²/dof", f"{imu_chi2:.3f}", _badge(_grade(imu_chi2, *_CHI2_GRADE))],
-        ["Trajectory states", f"{d.get('n_states', 0)}", ""],
-        ["LM iterations", f"{d.get('iterations', 0)}", ""],
-        ["IMU model", getattr(result, "imu_model", "—"), ""],
-    ]
+    facts = [("Trajectory states", f"{d.get('n_states', 0):,}"),
+             ("IMU model", getattr(result, "imu_model", "—"))]
     if d.get("t_ga") is not None:
         tga_s = d.get("t_ga_sigma")
-        diag_rows.append(["t_ga gyro&rarr;accel (ms)",
-                          f"{d['t_ga'] * 1e3:+.3f}"
-                          + (f" &plusmn; {tga_s * 1e3:.3f}" if tga_s else ""), ""])
-    diag_tbl = _tbl(["Metric", "Value", "Grade"], diag_rows)
+        facts.append(("t_ga gyro&rarr;accel", f"{d['t_ga'] * 1e3:+.3f}"
+                      + (f" &plusmn; {tga_s * 1e3:.3f}" if tga_s else "") + " ms"))
+    diag_tbl = ("<div class='facts'>" + "".join(f"<span><b>{k}</b> {v}</span>" for k, v in facts) + "</div>")
     cam_table = _reproj_table_html(d, board)     # Summary and Reprojection Analysis
     sections.append(sec("sec-summary", "Summary", stat_html + diag_tbl
-                        + (f"<h3>Reprojection per camera</h3>{cam_table}" if cam_table else "")))
+                        + (f"<h3>Reprojection per camera</h3>{cam_table}" if cam_table else "")
+                        + _param_folds_html(rows, base, aux, d, config, result_files)))
 
     # ---- 2. 3D geometry ---------------------------------------------------
     body_3d = _build_3d_section(result, board, landmarks, cam_data, views_out, reference)
@@ -869,8 +1113,11 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
     crows = []
     for r in rows:
         crows.append([
-            f"cam{r['id']}", r["model"],
-            f"{r['reproj_median_px']:.3f} / {r['reproj_p95_px']:.2f}"
+            cam_label(r["id"]), r["model"],
+            (f"{r['reproj_mean_px']:.3f} / {r['reproj_median_px']:.3f} / {r['reproj_std_px']:.3f}"
+             f" / {r['reproj_p95_px']:.2f}")
+            if all(r.get(k) is not None for k in ("reproj_mean_px", "reproj_std_px", "reproj_median_px", "reproj_p95_px"))
+            else f"{r['reproj_median_px']:.3f} / {r['reproj_p95_px']:.2f}"
             if r.get("reproj_median_px") is not None else f"{r['reproj_rms_px']:.3f}",
             f"{r['fx']:.1f}, {r['fy']:.1f}, {r['cx']:.1f}, {r['cy']:.1f}",
             f"{r['td_ms']:+.3f}",
@@ -878,7 +1125,10 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
             f"{r['lever_norm_mm']:.2f}", f"{r['rot_angle_rad']:.5f}",
             f"{r['baseline_norm_mm']:.2f}" if "baseline_norm_mm" in r else "—",
         ])
-    cam_body = _tbl(["cam", "model", "reproj med/p95 px", "fx,fy,cx,cy", "td ms", "tr ms",
+    reproj_head = ("reproj mean/med/std/p95 px" if all(r.get("reproj_mean_px") is not None and r.get("reproj_std_px")
+                                                       is not None for r in rows)
+                   else "reproj med/p95 px")
+    cam_body = _tbl(["cam", "model", reproj_head, "fx,fy,cx,cy", "td ms", "tr ms",
                      "lever |mm|", "rot |rad|", "baseline mm"], crows)
     # per-camera detail (T_C->I lever / rotation with sigma, distortion)
     for r in rows:
@@ -901,7 +1151,7 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
             *([["corner accounting", _corner_accounting_html(r)]]
               if r.get("corner_accounting") else []),
         ])
-        cam_body += f"<h3>Camera {r['id']}</h3>" + det
+        cam_body += f"<h3>cam{r['id']}</h3>" + det
     sections.append(sec("sec-cameras", "Cameras", cam_body))
 
     # ---- Board shape (only when estimate.board_points was on) ------------
@@ -912,16 +1162,16 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
     # ---- Reprojection analysis: all cameras, then one subsection per camera
     fig = _plot_reproj_frames(d)
     if fig is not None or cam_table:
+        per_cam = _reproj_camera_sections(d, board)
+        panels = "".join(f'<div class="cam-panel" id="sec-reproj-cam{c}" data-label="cam{c}">'
+                         f"<h3>{cam_label(c)} — reprojection</h3>{body}</div>" for c, body in per_cam)
         sections.append(sec("sec-reproj", "Reprojection Analysis",
                             (_fig_html(fig) if fig is not None else "")
-                            + (f"<h3>Per camera</h3>{cam_table}" if cam_table else "")))
+                            + (f"<h3>Per camera</h3>{cam_table}" if cam_table else "")
+                            + (f"<div class='cam-tabs'>{panels}</div>" if panels else "")))
         n = idx[0]
-        for k, (c, body) in enumerate(_reproj_camera_sections(d, board), 1):
-            sid = f"sec-reproj-cam{c}"
-            toc.append((sid, f"&nbsp;&nbsp;&nbsp;{n}.{k} Camera {c}"))
-            alt = " section-alt" if n % 2 == 0 else ""
-            sections.append(f'<div class="section{alt}" id="{sid}">'
-                            f"<h2>{n}.{k} Camera {c} — reprojection</h2>{body}</div>")
+        for k, (c, _body) in enumerate(per_cam, 1):    # TOC entries open the camera's tab
+            toc.append((f"sec-reproj-cam{c}", f"&nbsp;&nbsp;&nbsp;{n}.{k} cam{c}"))
 
     # ---- Motion & excitation ----------------------------------------------
     fig = _plot_excitation(result)
@@ -1018,21 +1268,21 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
                      f"{_badge(_grade(b['delta_mm'], 5.0, 15.0))}</p>")
         sections.append(sec("sec-reference", f"vs reference: {deltas['label']}", body))
 
-    # ---- Timing -----------------------------------------------------------
+    # ---- Appendix: timing, result files, configuration (closed) ---------------
+    from mvis.analysis.report_shell import folded
+    parts, letter = [], iter("ABCDEF")
     timing_body = _timing_body(d)
     if timing_body:
-        sections.append(sec("sec-timing", "Timing", timing_body))
-
-    # result files + configuration close the report (same as cam-only)
-    # ---- Result files (verbatim yaml / json, folded) ----------------------
+        parts.append(f'<div id="sec-timing"><h3>{next(letter)}. Timing</h3>'
+                     + folded("Solve stage timings (click to expand)", timing_body) + "</div>")
     res_body = _results_body(result_files)
     if res_body:
-        sections.append(sec("sec-results", "Result files", res_body))
-
-    # ---- Configuration (optional echo, folded) ---------------------------
+        parts.append(f'<div id="sec-results"><h3>{next(letter)}. Result files</h3>{res_body}</div>')
     cfg_body = _config_body(config)
     if cfg_body:
-        sections.append(sec("sec-config", "Configuration", cfg_body))
+        parts.append(f'<div id="sec-config"><h3>{next(letter)}. Configuration</h3>{cfg_body}</div>')
+    if parts:
+        sections.append(sec("sec-appendix", "Appendix", "".join(parts)))
 
     return render_page(title, toc, sections)
 

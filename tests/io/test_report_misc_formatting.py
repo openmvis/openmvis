@@ -114,7 +114,7 @@ def test_html_mixed_rig_no_zero_padding_and_named_cells():
     assert rows[0] == ("<table><tr><th>Camera</th><th>Model</th>"
                        + "".join(f"<th>d{i}</th>" for i in range(5)) + "</tr>")
     radtan, omni, kb4 = rows[1:]
-    assert radtan == ("<tr><td>0</td><td>radtan</td>"
+    assert radtan == ("<tr><td>cam0</td><td>radtan</td>"
                       "<td class='num'>k1=-0.294155</td><td class='num'>k2=0.087975</td>"
                       "<td class='num'>p1=0.000472</td><td class='num'>p2=-0.000425</td>"
                       + "<td class='num'></td>" + "</tr>")
@@ -129,11 +129,11 @@ def test_html_single_model_rig_unchanged():
     rows = _distortion_table_rows([_cam(0, "radtan", RADTAN), _cam(1, "radtan", RADTAN)])
     assert rows[0] == ("<table><tr><th>Camera</th><th>Model</th><th>k1</th><th>k2</th>"
                        "<th>p1</th><th>p2</th></tr>")
-    assert rows[1] == ("<tr><td>0</td><td>radtan</td><td class='num'>-0.294155</td>"
+    assert rows[1] == ("<tr><td>cam0</td><td>radtan</td><td class='num'>-0.294155</td>"
                        "<td class='num'>0.087975</td><td class='num'>0.000472</td>"
                        "<td class='num'>-0.000425</td></tr>")
     rows = _distortion_table_rows([_cam(0, "fov", [300, 300, 320, 240, 0.9])])
-    assert rows[1] == "<tr><td>0</td><td>fov</td><td class='num'>0.900000</td></tr>"
+    assert rows[1] == "<tr><td>cam0</td><td>fov</td><td class='num'>0.900000</td></tr>"
 
 
 def _printed_intr(model, intr):
@@ -221,7 +221,7 @@ def test_camera_only_report_uses_the_shared_page_shell(tmp_path, monkeypatch):
     out = tmp_path / "r.html"
     html_report.generate_html_report(result, {0: []}, Chessboard(rows=7, cols=5, square_size=0.03), {}, {}, None,
                                      title="My title", output_path=str(out))
-    assert seen["title"] == "My title" and seen["n"] > 0
+    assert seen["title"] == "Camera calibration · My title" and seen["n"] > 0   # no source known: the given title
     assert seen["toc"][0] == ("sec-summary", "1. Summary")
     html = out.read_text()
     assert "<title>" in html and "My title" in html and "report-footer" in html and 'id="scroll-top"' in html

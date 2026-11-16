@@ -50,17 +50,24 @@ def test_vectors_dual_empty():
     assert fig is not None
 
 
-def test_per_tag_robust_has_two_axes():
+def test_per_tag_robust_is_one_panel_with_median_over_p95():
+    import numpy as np
     tag_errors = {i: [0.1, 0.2, 0.3, 1.0] for i in range(8)}
     fig = plot_error_per_tag_robust(tag_errors, num_tags=8, camera_id=0)
-    assert len(fig.axes) == 2
+    assert len(fig.axes) == 1
+    ax = fig.axes[0]
+    bars = ax.patches
+    assert len(bars) == 16                               # 8 P95 bars, then 8 median bars over them
+    p95, med = [b.get_height() for b in bars[:8]], [b.get_height() for b in bars[8:]]
+    assert p95[0] == np.percentile([0.1, 0.2, 0.3, 1.0], 95) and med[0] == 0.25
+    assert bars[0].get_width() > bars[8].get_width()
 
 
 def test_per_tag_robust_handles_missing_tags():
     # Only tag 3 has data; others should render as zero bars without crashing.
     tag_errors = {3: [0.5, 0.7, 1.2]}
     fig = plot_error_per_tag_robust(tag_errors, num_tags=10, camera_id=1)
-    assert len(fig.axes) == 2
+    assert len(fig.axes) == 1
 
 
 def test_uv_histogram_two_axes():

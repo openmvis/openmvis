@@ -102,7 +102,7 @@ def test_report_table_and_camera_sections():
               corner_errors={p: [0.1, 0.2] for p in range(36)}, n_tags=123)
     d = {"reproj_corners_by_cam": [cd, cd]}
     table = _reproj_table_html(d, _Board())
-    assert table.count("<td>cam") == 2 and "<th>Tags</th>" in table
+    assert table.count("</span>cam") == 2 and "<th>Tags</th>" in table      # colour chip, then camN
     assert "<td>123</td>" in table and "<td>200</td>" in table              # tags from the ids
     # no ids (n_tags absent) or a chessboard: no Tags column, never corners / 4
     no_ids = {"reproj_corners_by_cam": [{**cd, "n_tags": None}]}

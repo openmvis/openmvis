@@ -50,3 +50,11 @@ def test_euroc_config_is_sent_to_the_shipped_converter(tmp_path):
     assert list(inspect.signature(convert_euroc_folder_to_rosbag).parameters)[:2] == \
         ["source_dir", "output_bag"]
     assert not (tmp_path / "rt").exists()      # refused before anything is written
+
+
+def test_apply_calib_step_runs_this_interpreters_mvis_not_path():
+    """The round trip's apply-calib step must not depend on `mvis` being on PATH (it failed with
+    FileNotFoundError when mvis was started by its full path, 2026-11-15)."""
+    import sys
+    from mvis.recalib.roundtrip import apply_calib_command
+    assert apply_calib_command("r.yaml") == [sys.executable, "-m", "mvis.cli.main", "apply-calib", "-c", "r.yaml"]

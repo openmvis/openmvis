@@ -56,6 +56,21 @@ def imu_diag(ii, ndigits: int = 6):
     return dw, da
 
 
+def calyx_dw_qr(Dw):
+    """``Dw = R · U`` for a CALYX gyro correction: (R, U) with R ∈ SO(3) the misalignment
+    rotation and U upper-triangular with a positive diagonal (scale on the diagonal,
+    cross-coupling above it). Unrounded; calyx_dw_decomposed and the report read from it."""
+    import numpy as np
+    A = np.asarray(Dw, float).reshape(3, 3)
+    Q, U = np.linalg.qr(A)
+    s = np.sign(np.diag(U))
+    s[s == 0] = 1.0
+    # diag(U) > 0, Q stays orthogonal. Element-wise on purpose: imu_model.decompose_dw
+    # folds with diag(s) products, which drop the sign of exact zeros (-0.0 -> 0.0) and
+    # so change the printed Dw_shear / rotvec for a Dw with exact zeros.
+    return Q * s[None, :], U * s[:, None]
+
+
 def calyx_dw_decomposed(Dw, ndigits: int = 5):
     """Physical reading of a CALYX full-3x3 gyro correction: ``Dw = R · U``
     (QR; R ∈ SO(3), U upper-triangular with positive diagonal). The calyx
@@ -66,14 +81,7 @@ def calyx_dw_decomposed(Dw, ndigits: int = 5):
     and log(R) as a rotation vector in rad (project convention: rotations
     as log(R), never RPY)."""
     import numpy as np
-    A = np.asarray(Dw, float).reshape(3, 3)
-    Q, U = np.linalg.qr(A)
-    s = np.sign(np.diag(U))
-    s[s == 0] = 1.0
-    # diag(U) > 0, Q stays orthogonal. Element-wise on purpose: imu_model.decompose_dw
-    # folds with diag(s) products, which drop the sign of exact zeros (-0.0 -> 0.0) and
-    # so change the printed Dw_shear / rotvec for a Dw with exact zeros.
-    Q, U = Q * s[None, :], U * s[:, None]
+    Q, U = calyx_dw_qr(Dw)
     # numpy-only SO(3) log (Rodrigues inverse; Q is near identity here)
     tr = float(np.trace(Q))
     c = max(-1.0, min(1.0, (tr - 1.0) / 2.0))

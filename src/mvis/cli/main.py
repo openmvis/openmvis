@@ -525,6 +525,7 @@ def calibrate_cam_imu(config) -> dict:
                                      if d.get("reproj_median_px") is not None else None),
                    reproj_p95_px=(round(float(d["reproj_p95_px"]), 3)
                                   if d.get("reproj_p95_px") is not None else None),
+                   **_reproj_extra(d, "_px"),
                    solve_s=round(time.time() - t0, 1), cams=[])
     # solver health for `mvis verdict` (ok alone does not mean a good fit)
     summary["diagnostics"] = {
@@ -673,6 +674,26 @@ def calibrate_cam_imu(config) -> dict:
     return summary
 
 
+def _r3(v):
+    return None if v is None or not np.isfinite(float(v)) else round(float(v), 3)
+
+
+def _reproj_extra(e: dict, suffix: str) -> dict:
+    """The cam_imu.json reprojection fields after rms/median/p95: mean, std, p90 and max over all
+    corners, the corner count, and the inlier population (`reproj_stats.inlier_stats`). Nothing for
+    a result made before these were recorded, so old results keep their exact summary."""
+    if "reproj_mean_px" not in e:
+        return {}
+    out = {f"reproj_{k}{suffix}": _r3(e.get(f"reproj_{k}_px")) for k in ("mean", "std", "p90", "max")}
+    out["reproj_n_corners"] = int(e["reproj_n_corners"])
+    inl = e.get("reproj_inlier")
+    if inl:
+        out["reproj_inlier"] = {**{k: _r3(inl.get(k)) for k in ("mean", "median", "std", "p90", "p95", "max")},
+                                "n_corners": int(inl["n_corners"]), "n_excluded": int(inl["n_excluded"]),
+                                "threshold_px": _r3(inl["threshold_px"])}
+    return out
+
+
 def _summary_sensor_fields(r, summary: dict) -> None:
     """Add the per-sensor fields of the cam_imu.json summary, in place and in file order:
     the ``cams`` rows, the base-IMU model and Dw/Da diagonals, ``t_ga`` and the aux ``imus``
@@ -688,6 +709,7 @@ def _summary_sensor_fields(r, summary: dict) -> None:
                                  if e.get("reproj_median_px") is not None else None),
                   reproj_p95=(round(float(e["reproj_p95_px"]), 3)
                               if e.get("reproj_p95_px") is not None else None),
+                  **_reproj_extra(e, ""),
                   intr=[round(float(v), 5) for v in cal.intr],
                   p_CinI_mm=[round(1e3 * v, 2) for v in cr["p_m"]],
                   rotvec=[round(v, 5) for v in cr["rotvec"]])

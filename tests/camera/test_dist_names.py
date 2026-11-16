@@ -64,7 +64,7 @@ def _old_rows(cameras):
         else:
             coefs += [0.0] * n_cols
             cells = ["{:.6f}".format(coefs[i]) for i in range(n_cols)]
-        rows.append(f"<tr><td>{cam.camera_id}</td><td>{cam.distortion_model}</td>"
+        rows.append(f"<tr><td>cam{cam.camera_id}</td><td>{cam.distortion_model}</td>"   # camN since report-refinements
                     + "".join(f"<td class='num'>{c}</td>" for c in cells) + "</tr>")
     return rows
 

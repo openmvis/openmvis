@@ -203,7 +203,9 @@ def generate_calibration_report(
             from mvis.analysis.views.spec import cam_only_rig_spec, cam_only_scene_spec
             ext_by_id = {ext.from_camera: ext.T_to_from for ext in result.extrinsics}
             view_specs = {"scene": cam_only_scene_spec(valid_poses, valid_times, board, result.cameras, ext_by_id, ref_cam, views),
-                          "rig": cam_only_rig_spec(result.cameras, ext_by_id, ref_cam)}
+                          "rig": cam_only_rig_spec(result.cameras, ext_by_id, ref_cam,
+                                                  {e.camera_id: (e.median, e.p95)
+                                                   for e in (result.reprojection_errors or [])})}
         except Exception as e:
             logger.warning(f"report views failed; using the Plotly figures: {e}")
             view_specs = {}

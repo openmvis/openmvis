@@ -131,6 +131,8 @@ class ReprojectionErrorStats:
     num_observations: int = 0
     p90: float = 0.0
     p95: float = 0.0
+    std: float = 0.0                 # population std of the corner norms, as Kalibr prints it
+    inlier: dict | None = None       # reproj_stats.inlier_stats: the same corners within 3 x pixel sigma
 
 
 @dataclass

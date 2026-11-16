@@ -259,3 +259,28 @@ def test_regenerate_frames_without_a_run_keep_every_frame(tmp_path):
     path = tmp_path / "detections.mvisdb"
     DatabaseManager().save(make_db(CalibChoice.CAM_ONLY), path)
     assert [fr.timestamp for fr in _frames_from_mvisdb(path)[0]] == [100.0, 100.1, 100.2]
+
+
+def test_i5_shadow_ignores_the_writer_only_reprojection_std_and_inliers(tmp_path):
+    """The writer's per-camera std and inlier statistics (Kalibr-style mean / median / std) are not in
+    the estimate store, like max: a camera-only result carrying them still matches its export view,
+    and only those two keys are dropped."""
+    from mvis.calibration.reproj_stats import corner_stats, inlier_stats
+    from mvis.core.types import ReprojectionErrorStats
+    r = _rig_result()
+    errs = []
+    for cam in r.cameras:
+        norms = np.linspace(0.05, 0.6, 40 + cam.camera_id)
+        s = corner_stats(norms)
+        errs.append(ReprojectionErrorStats(camera_id=cam.camera_id, rms=s["rms"], mean=s["mean"], median=s["median"],
+                                           p90=s["p90"], p95=s["p95"], max=s["max"], num_observations=s["n_corners"],
+                                           std=s["std"], inlier=inlier_stats(norms, 1.0)))
+    r.reprojection_errors = errs
+    a, b = _shadow(tmp_path, with_resolution=True, result=r)
+    pa = a["reprojection_errors"]["per_camera"][0]
+    pb = b["reprojection_errors"]["per_camera"][0]
+    assert pa["std"] > 0 and "inlier" in pa
+    assert pb.get("std", 0.0) == 0.0 and "inlier" not in pb      # the store holds neither (view writes the default)
+    normalise_calib_yaml_pair(a, b)
+    assert a == b
+    assert a["reprojection_errors"]["per_camera"][0]["p95"] == errs[0].p95

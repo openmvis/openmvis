@@ -116,10 +116,16 @@ class OutputWriter:
                 "rms": float(err.rms),
                 "mean": float(err.mean),
                 "median": float(err.median),
+                "std": float(err.std),
                 "p90": float(err.p90),
                 "p95": float(err.p95),
                 "max": float(err.max),
                 "num_observations": int(err.num_observations),
+                **({"inlier": {k: (int(v) if k.startswith("n_") else float(v))
+                               for k, v in err.inlier.items()
+                               if k in ("mean", "median", "std", "p90", "p95", "max", "n_corners", "n_excluded",
+                                        "threshold_px")}}
+                   if err.inlier else {}),
             })
 
         # Board shape: per-corner heights when estimated,
