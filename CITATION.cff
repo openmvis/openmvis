@@ -36,3 +36,22 @@ preferred-citation:
   start: 1995
   end: 2026
   doi: "10.1177/02783649241245726"
+references:
+  - type: conference-paper
+    authors:
+      - family-names: Yang
+        given-names: Yulin
+      - family-names: Wisely Babu
+        given-names: Benzun Pious
+      - family-names: Chen
+        given-names: Chuchu
+      - family-names: Huang
+        given-names: Guoquan
+      - family-names: Ren
+        given-names: Liu
+    title: "Analytic Combined IMU Integration (ACI2) For Visual Inertial Navigation"
+    collection-title: "2020 IEEE International Conference on Robotics and Automation (ICRA)"
+    year: 2020
+    start: 4680
+    end: 4686
+    doi: "10.1109/ICRA40945.2020.9197280"

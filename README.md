@@ -194,6 +194,20 @@ has a version DOI, `10.5281/zenodo.24239183` for v0.1.0):
 }
 ```
 
+If you use analytic combined IMU integration, ACI2, or ACI3 (ACI2 with IMU intrinsics, from the
+MVIS paper), also cite the ACI2 paper. Every MVIS camera–IMU solve uses ACI3 in its IMU factors.
+
+```bibtex
+@inproceedings{yang2020aci2,
+  title     = {Analytic Combined {IMU} Integration ({ACI}$^2$) For Visual Inertial Navigation},
+  author    = {Yang, Yulin and Wisely Babu, Benzun Pious and Chen, Chuchu and Huang, Guoquan and Ren, Liu},
+  booktitle = {2020 IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2020},
+  pages     = {4680--4686},
+  doi       = {10.1109/ICRA40945.2020.9197280}
+}
+```
+
 If your results depend on the Calibench-VI datasets, cite them too; the entries are on
 [openmvis.com/about/contributors](https://openmvis.com/about/contributors/#citing-the-datasets-calibench-vi).
 

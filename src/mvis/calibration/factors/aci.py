@@ -22,6 +22,8 @@ Pure-Python port of the C++ MVIS `aci/ACIBase` + `aci/ACI_In` (`feed_IMU_single`
 preintegrated deltas (D_R, D_v, D_p) plus the bias and intrinsic Jacobians and
 the 15x15 measurement covariance that the `ImuFactorACI_In_SE3` factor consumes.
 
+Papers: ACI2, Yang et al., "Analytic Combined IMU Integration (ACI2) For Visual Inertial Navigation", ICRA 2020,
+doi 10.1109/ICRA40945.2020.9197280; ACI3 (with intrinsics), Yang, Geneva and Huang, IJRR 2024.
 Reference: ACI tech report — eq. 74–84 (integration), 125–134 (bias Jacobians),
 141–154 (covariance). Validated against the C++ ACI_In oracle.
 
