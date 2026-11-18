@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# Joint stereo + IMU calibration — WHUVID ZED2, myCalibrate.bag. Global shutter (readout pinned at 0), like the authors' Kalibr run.
+# IMU noise from the authors' Kalibr imu.yaml (gyro 2.14e-3, gyro walk 1.72e-5, acc 2.50e-2, acc walk 3.83e-4).
+# Prereq: mvis cam -c examples/configs/whuvid_zed2/cam_only_radtan.yaml
+# Run:    mvis cam-imu -c examples/configs/whuvid_zed2/cam_imu_stereo_gs.yaml
+mode: cam-imu
+input:
+  format: ros1
+  path: ${MVIS_DATASETS}/whuvid/myCalibrate_imudedup.bag   # myCalibrate.bag with its 2 duplicate /imu0 samples dropped
+  cam_topics: ["/cam0/image_raw", "/cam1/image_raw"]
+  imu_topics: ["/imu0"]
+  window_mode: manual          # 74 s recording — use all of it
+  t0: 0.0
+  window: 0.0
+  cache_dir: /tmp/mvis_whuvid_detcache
+board:
+  board_type: apriltag
+  rows: 6
+  cols: 6
+  tag_size: 0.0208
+  tag_spacing: 0.3
+  tag_family: t36h11
+camera_input:
+  path: results/whuvid_zed2/cam_only_radtan.yaml
+  free_intrinsics: true
+  estimate_readout: false
+solve:
+  state_hz: 20.0
+  max_iterations: 40
+  rms_gate_px: 2.0
+  imu_intrinsics: dw_da
+  sigma_g: 0.0021439491768403996
+  sigma_bg: 1.7169402705574126e-05
+  sigma_a: 0.024998977782757226
+  sigma_ba: 0.00038337712212560576
+  init_kwargs: {keyframe_hz: 2.0}
+output:
+  path: results/whuvid_zed2/cam_imu_stereo_gs.json
