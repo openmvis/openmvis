@@ -225,3 +225,10 @@ def test_camera_only_report_uses_the_shared_page_shell(tmp_path, monkeypatch):
     assert seen["toc"][0] == ("sec-summary", "1. Summary")
     html = out.read_text()
     assert "<title>" in html and "My title" in html and "report-footer" in html and 'id="scroll-top"' in html
+
+
+def test_report_names_the_installed_release():
+    """Every report's header and footer name the package version, not a version typed into the style."""
+    import mvis
+    from mvis.analysis.report_shell import REPORT_STYLE
+    assert REPORT_STYLE.version == f"v{mvis.__version__}"

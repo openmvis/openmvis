@@ -66,17 +66,28 @@ class _Finished:
         return self._iterations
 
 
-def rescue_if_stuck(graph, start, values, opt, params, make_opt):
+def rescue_if_stuck(graph, start, values, opt, params, make_opt, *, at_iteration_limit=False):
     """(values, opt, report). `report` is None unless LM stopped at its damping cap with most of the
     cost still predicted to go. Then it solves again from `start`, as the stuck point itself can be
-    too far off to recover from. `make_opt(values, params)` builds an optimizer of the same kind."""
-    if opt.lambda_() < params.getlambdaUpperBound():
+    too far off to recover from. `make_opt(values, params)` builds an optimizer of the same kind.
+
+    With `at_iteration_limit`, a stop at the iteration limit counts as well: from a poor start LM
+    can still be descending, held at a large lambda, when its iterations run out. The camera-only
+    solve of a fisheye camera seeded with a vanishing-point focal length about twice the real one
+    ended there (Monado MGC05 cam0: 460.6 px after 15 iterations, 271.1 px after 39)."""
+    capped = opt.lambda_() >= params.getlambdaUpperBound()
+    limited = at_iteration_limit and opt.iterations() >= params.getMaxIterations()
+    if not (capped or limited):
         return values, opt, None
     ratio = predicted_decrease_ratio(graph, values)
     if ratio < STUCK_RATIO:
         return values, opt, None
-    logger.warning("LM gave up at its damping cap with %.0f %% of the cost still predicted to go; "
-                   "rescuing with diagonal damping", ratio * 100)
+    if capped:
+        logger.warning("LM gave up at its damping cap with %.0f %% of the cost still predicted to go; "
+                       "rescuing with diagonal damping", ratio * 100)
+    else:
+        logger.warning("LM ran out of iterations (%d) with %.0f %% of the cost still predicted to go; "
+                       "rescuing with diagonal damping", opt.iterations(), ratio * 100)
     stopped, stopped_opt = values, opt
     iterations, err_before = opt.iterations(), opt.error()
     values = start
@@ -95,5 +106,5 @@ def rescue_if_stuck(graph, start, values, opt, params, make_opt):
                   failed=bool(after >= STUCK_RATIO))
     if report["failed"]:
         logger.warning("LM is still stuck after the rescue (%.0f %% of the cost predicted to go); "
-                       "marking the solve not ok", after * 100)
+                       "flagging the solve (lm_rescue.failed)", after * 100)
     return values, _Finished(opt, iterations), report

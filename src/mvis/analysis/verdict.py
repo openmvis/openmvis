@@ -135,6 +135,10 @@ def assess_cam(path: str) -> Verdict:
     with open(path) as f:
         d = yaml.safe_load(f)
     v = Verdict(kind="cam")
+    rescue = d.get("lm_rescue")
+    if rescue and rescue.get("failed"):
+        v.add("solve.lm_rescue", "solve", rescue.get("ratio_after"), "< 0.5 of the cost still to go", FAIL,
+              "LM still stuck after the rescue: the result is not at a minimum")
     errs = {e["camera"]: e for e in (d.get("reprojection_errors") or {}).get("per_camera", [])}
     for cam in d.get("cameras", []):
         cid = cam["id"]

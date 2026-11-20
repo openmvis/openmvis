@@ -32,6 +32,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
+from mvis import __version__
+
 import cv2
 import numpy as np
 import matplotlib
@@ -405,7 +407,7 @@ class ReportStyle:
 
     # --- Branding ---
     brand_name: str = "OpenMVIS"
-    version: str = "v0.1.0"
+    version: str = f"v{__version__}"      # the installed package, so every report names the release that wrote it
     tagline: str = "Open-source multi-visual-inertial sensor calibration"
     author_name: str = "Yulin Yang"
     author_email: str = "contact@openmvis.com"

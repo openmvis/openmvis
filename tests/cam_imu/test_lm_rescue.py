@@ -121,6 +121,33 @@ def test_rescue_that_ends_worse_keeps_the_original_result():
     assert report["kept"] is False and report["failed"] is True
 
 
+def test_iteration_limit_stop_is_rescued_only_when_asked():
+    """The camera-only solve asks; the cam-IMU solve keeps rescuing damping-cap stops only."""
+    def make_opt(values, params):
+        return gtsam.LevenbergMarquardtOptimizer(_graph(), values, params)
+
+    params = _params()
+    params.setMaxIterations(15)
+    far = _values(5.0)
+    limited = _opt(lam=10.0, err=8.0, iterations=15, values=far)
+    values, opt, report = R.rescue_if_stuck(_graph(), far, far, limited, params, make_opt)
+    assert values is far and opt is limited and report is None
+    values, opt, report = R.rescue_if_stuck(_graph(), far, far, limited, params, make_opt,
+                                            at_iteration_limit=True)
+    assert values.atVector(A)[0] == pytest.approx(1.0)
+    assert report["kept"] is True and report["failed"] is False
+
+
+def test_converged_at_the_iteration_limit_is_not_rescued():
+    params = _params()
+    params.setMaxIterations(15)
+    values = _values(1.0)
+    opt = _opt(lam=10.0, iterations=15, values=values)
+    got_values, got_opt, report = R.rescue_if_stuck(_graph(), values, values, opt, params, make_opt=None,
+                                                    at_iteration_limit=True)
+    assert got_values is values and got_opt is opt and report is None
+
+
 def test_still_stuck_after_the_rescue_is_reported_as_failed():
     def make_opt(values, params):
         return NS(optimize=lambda: values, error=lambda: 0.5, iterations=lambda: 0)

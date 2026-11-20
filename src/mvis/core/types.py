@@ -169,6 +169,9 @@ class CalibrationResult:
     # Hierarchical wall-clock timings produced by Timer.to_dict().
     # Optional; absent for results loaded from older YAML files.
     timings: Optional[dict] = None
+    # The LM rescue report of the solve that made this result (calibration.lm_rescue): None unless LM
+    # stopped stuck or out of iterations far from its minimum; `failed` = still stuck after the rescue.
+    lm_rescue: Optional[dict] = None
     # Diverged pose removal stats from optimizer sanitizer.
     # {"total": N, "removed": M, "kept": K}
     diverged_pose_stats: Optional[dict] = None

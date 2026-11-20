@@ -216,6 +216,11 @@ class OutputWriter:
         if timings:
             data["timings"] = timings
 
+        # LM rescue report (calibration.lm_rescue); `failed` makes `mvis verdict` grade the result RED.
+        lm_rescue = getattr(result, "lm_rescue", None)
+        if lm_rescue:
+            data["lm_rescue"] = lm_rescue
+
         # Diverged pose removal stats.
         dp_stats = getattr(result, "diverged_pose_stats", None)
         if dp_stats:

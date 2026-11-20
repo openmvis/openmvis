@@ -3,7 +3,57 @@
 All notable changes to MVIS are recorded here. Versions follow
 [Semantic Versioning](https://semver.org/); 0.x releases may change the config schema.
 
-## [0.1.0] — unreleased
+## [0.2.0] — 2026-11-19
+
+Changes since 0.1.0. Results files gain fields; nothing is removed or renamed, and a
+config that ran on 0.1.0 runs unchanged.
+
+### Added
+
+- ROS2 bags are read with `rosbags`, with no ROS install: the bag folder, or one
+  `.db3` / `.mcap` file, in camera-only (`source_type: ros2bag`) and cam-IMU
+  (`input.format: ros2`) runs, and `mvis inspect` lists their streams. Times are
+  the header stamps, as for ROS1. `mvis roundtrip` and `apply-calib` stay
+  ROS1-only. The `ros1` extra needs `rosbags>=0.11.6`, which reads ROS2 bags whose
+  type hashes are empty (bags written by converters, such as the Hilti-Trimble
+  2026 calibration bags).
+- Reprojection statistics per camera and overall: mean, median, standard
+  deviation, P90, P95 and max, also for the inlier population (corners within
+  3 px), in the results (`cam_imu.json`, the camera-only result) and both reports.
+- Camera-only runs with `estimate.board_points` on a corner subsample warn that the
+  dropped corners keep their prior heights; `corner_subsample: all` estimates every
+  corner at about 1.8x the solve time.
+- The Kalibr `camchain-imucam` export names the topic each camera was read from
+  (`rostopic`), not `/cam<N>/image_raw`.
+- Dataset catalog: the Hilti-Trimble SLAM Challenge 2026 calibration (recipe only).
+- Examples: WHUVID ZED2 configs (camera-only and cam-IMU, global and rolling shutter).
+
+### Changed
+
+- Reports redesigned, camera-only and cam-IMU alike: a Summary with "Calibration
+  parameters by sensor" folds, per-camera tabs, graded cells, aligned numeric
+  columns with one precision per unit, a lettered and closed Appendix, a print /
+  PDF view, a Board Shape section whenever the board shape was estimated, and IMU
+  Residuals per state block (rotation, position, velocity, gyro and accel bias
+  steps). The rig table shows reprojection median and P95; the calyx `Dw` shows as
+  R · U; a σ that rounds to zero (a pinned parameter) is left out; a sub-µs readout
+  shows as global shutter. The "Within 3.0 px" table is gone.
+- Reports name the installed version (they said v0.1.0 whatever the version).
+- AprilGrid detection skips the upscale pass when the native pass already decodes
+  the board, counting only this board's tags.
+
+### Fixed
+
+- A camera-only solve that runs out of iterations, or stops at its damping cap,
+  with most of its cost still predicted to go is solved again with diagonal damping
+  from its start, as the cam-IMU solve does after a stuck stop
+  (`mvis.calibration.lm_rescue`); every other solve is unchanged. The rescue report
+  is written to the result as `lm_rescue`, and `mvis verdict` grades a result RED
+  when LM is still stuck after the rescue (`lm_rescue.failed`).
+- `mvis roundtrip` runs `apply-calib` through the interpreter it runs in, not the
+  `mvis` found on `PATH`.
+
+## [0.1.0] — 2026-11-15
 
 First public release of MVIS, the calibration toolbox of the OpenMVIS project,
 as the Python package `pymvis` (import and CLI `mvis`). Linux and macOS,
@@ -37,9 +87,7 @@ is no earlier public version to compare against.
   what is pinned, including the board shape (`board_points`), on both modes. With
   `board_points` off the board is held at its given shape.
 - Defaults: camera-only `corner_subsample: two_anti` (two diagonal corners per
-  AprilTag; one corner moves the principal point by up to 0.8 px; with
-  `estimate.board_points` on it warns that the dropped corners keep their prior height,
-  and `all` estimates every corner at about 1.8x the solve time), cam-IMU `all`;
+  AprilTag; one corner moves the principal point by up to 0.8 px), cam-IMU `all`;
   `estimate_t_ga: true` in cam-IMU runs; the `mvis` CLI pins BLAS to one thread
   (`doc/blas_threads.md`).
 
@@ -51,13 +99,6 @@ is no earlier public version to compare against.
   is shifted or min-max stretched, colour becomes grey with OpenCV luma, image
   folders keep the sensor's stored orientation, and an unknown encoding or a frame
   of the wrong size stops with an error.
-- ROS2 bags are read with `rosbags`, with no ROS install: the bag folder, or one
-  `.db3` / `.mcap` file, in camera-only (`source_type: ros2bag`) and cam-IMU
-  (`input.format: ros2`) runs, and `mvis inspect` lists their streams. Times are
-  the header stamps, as for ROS1. `mvis roundtrip` and `apply-calib` stay
-  ROS1-only. The `ros1` extra needs `rosbags>=0.11.6`, which reads ROS2 bags whose
-  type hashes are empty (bags written by converters, such as the Hilti-Trimble
-  2026 calibration bags).
 - Boards: AprilGrid (`aprilgrid`), chessboard, ArUco.
 - Kalibr interop (`mvis.io.kalibr`): read and write `camchain` and
   `camchain-imucam`, load AprilGrid targets from Kalibr YAML.

@@ -55,6 +55,7 @@ from mvis.calibration.factors.camera_projection import k_cal_vec
 from mvis.calibration.factors.projection import make_projector
 from mvis.calibration.lm_params import (
     LM_LAMBDA_LOWER_DEFAULT, LM_LAMBDA_UPPER_DEFAULT, make_lm_params)
+from mvis.calibration.lm_rescue import rescue_if_stuck
 from mvis.core.camera_models import check_model, legacy_model
 from mvis.core.types import (
     CalibrationResult,
@@ -505,15 +506,25 @@ class Optimizer:
 
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
         result_values = optimizer.optimize()
-        logger.info(f"Error: {graph.error(initial):.4f} -> {graph.error(result_values):.4f}")
+        # A poor seed, such as a fisheye camera's vanishing-point focal length, can leave LM still
+        # descending at its iteration limit, or stopped at its damping cap; a stop that is not stuck
+        # keeps its result bitwise. The report goes on the result, so a solve still stuck is flagged.
+        result_values, optimizer, lm_rescue = rescue_if_stuck(
+            graph, initial, result_values, optimizer, params,
+            lambda values, lm_params: gtsam.LevenbergMarquardtOptimizer(graph, values, lm_params),
+            at_iteration_limit=True)
+        logger.info(f"Error: {graph.error(initial):.4f} -> {graph.error(result_values):.4f} "
+                    f"({optimizer.iterations()} iterations)")
 
         # -- Extract results --
-        return self._extract_results(
+        result = self._extract_results(
             result_values, graph, camera_ids, reference_camera,
             all_frames, all_board_poses, distortion_models, image_sizes,
             bp_timeline_t, bp_timeline_idx, bp_source_frame_indices,
             bp_count, use_dt, is_single, snap_tol, factor_frames, lm_n_obs,
         )
+        result.lm_rescue = lm_rescue
+        return result
 
     # ==================================================================
     # Backward-compatible wrappers
