@@ -46,7 +46,7 @@ multi-IMU rigs. OpenMVIS is the project, MVIS is the calibration toolbox, and
   recalibrates and reports PASS/FAIL.
   [Guide](https://openmvis.com/guides/roundtrip/)
 - **Inputs**: image folders, timestamped images, ROS1 and ROS2 bags (no ROS
-  install), EuRoC/ASL folders; AprilGrid, chessboard and ArUco boards; Kalibr
+  install), EuRoC/ASL folders; AprilGrid, chessboard, ArUco and ChArUco boards; Kalibr
   `camchain` read and write; streaming detection, so memory does not grow with
   the recording. [Configuration](https://openmvis.com/reference/configuration/)
 - **Outputs**: YAML calibrations, JSON results, self-contained HTML reports
@@ -87,7 +87,7 @@ The validation behind these claims is on
 | Batch sweep over a dataset family | ✅ `input.bags` | ✖ | ✖ |
 | Dataset download + check | ✅ `mvis datasets` | ✖ | ✖ |
 | Trajectory model | discrete factor graph | continuous-time B-spline | continuous-time B-spline |
-| Boards | AprilGrid, chessboard, ArUco | AprilGrid, chessboard, circles | AprilGrid |
+| Boards | AprilGrid, chessboard, ArUco, ChArUco | AprilGrid, chessboard, circles | AprilGrid |
 | Input | ROS1/ROS2 bag, EuRoC, image folders | ROS bag | ROS bag, EuRoC |
 | Runs without ROS | ✅ pure Python | ✖ | ✅ C++ build, no ROS |
 | Platforms | Linux, macOS, Windows (tentative) (Python 3.11–3.12) | Linux (ROS 1, or Docker) | Linux, macOS |

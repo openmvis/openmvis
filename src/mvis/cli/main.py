@@ -159,6 +159,9 @@ def calibrate(config: CalibrationConfig) -> None:
     # Mirrors CalibrationPipeline; "all" is a no-op. (config.corner_subsample is the
     # camera-only canonical field on CalibrationConfig / CamRunConfig.)
     cs_mode = getattr(config, "corner_subsample", "all")
+    from mvis.detection.charuco_board import CharucoBoard
+    if isinstance(board, CharucoBoard):
+        cs_mode = "all"           # ChArUco ids are chessboard corners: nothing to thin
     if cs_mode != "all":
         from mvis.detection.corner_subsample import filter_frames
         before = sum(len(f.observations) for fr in all_frames.values() for f in fr)

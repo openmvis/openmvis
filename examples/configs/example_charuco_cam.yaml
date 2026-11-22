@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
+# SPDX-License-Identifier: GPL-3.0-only
+# MVIS — camera-only stereo calibration with a ChArUco board (doc/board_charuco.md).
+#
+# Run with:   mvis run -c examples/configs/example_charuco_cam.yaml
+
+mode: cam
+
+input:
+  cameras:
+    - camera_id: 0
+      source_type: ros2bag
+      source_path: /path/to/rig_bag
+      topic: /cam0/image_raw
+      distortion_model: equidistant
+      shutter_type: global
+    - camera_id: 1
+      source_type: ros2bag
+      source_path: /path/to/rig_bag
+      topic: /cam1/image_raw
+      distortion_model: equidistant
+      shutter_type: global
+
+board:
+  board_type: charuco
+  rows: 9                    # SQUARES (8 x 13 = 104 inner corners), not inner corners
+  cols: 14
+  square_size: 0.04          # metres
+  marker_size: 0.03          # metres
+  aruco_dict: DICT_5X5_250   # required; must match the printed board
+
+solve:
+  factor_hz: 5.0
+  max_iterations: 15
+
+output:
+  path: results/charuco_cam/calibration.yaml

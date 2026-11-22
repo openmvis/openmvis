@@ -40,8 +40,17 @@ def validate_config(config: CalibrationConfig) -> list[str]:
         errors.append("Board must have at least 2 rows and 2 cols")
     if b.tag_size <= 0 and b.board_type == "apriltag":
         errors.append("tag_size must be positive")
-    if b.square_size <= 0 and b.board_type == "chessboard":
+    if b.square_size <= 0 and b.board_type in ("chessboard", "charuco"):
         errors.append("square_size must be positive")
+    if b.board_type == "charuco":
+        if b.rows < 3 or b.cols < 3:
+            errors.append("ChArUco rows and cols count squares and must be at least 3")
+        if not 0 < b.marker_size < b.square_size:
+            errors.append("ChArUco marker_size must be positive and smaller than square_size")
+        from mvis.detection.charuco_board import dictionary_problem
+        problem = dictionary_problem(b.aruco_dict, b.rows, b.cols)
+        if problem:
+            errors.append(problem)
     # corner_subsample is a top-level camera-only field.
     if config.corner_subsample not in (
         "all", "top_left", "tl", "bl", "br", "tr",

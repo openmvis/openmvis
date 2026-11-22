@@ -44,6 +44,10 @@ _TYPE_BY_CLASSNAME = {
     "ArucoBoard": BoardType.ARUCO_GRID,     # AprilGrid fall back to the legacy
     "Chessboard": BoardType.CHESSBOARD,     # loop silently; caught by review,
     "ChessBoard": BoardType.CHESSBOARD,     # pinned by test now
+    # ChArUco points are chessboard corners, one per id: stored as chessboard rows (the
+    # schema's board_type CHECK has no 'charuco'; the ChArUco layout stays in the config
+    # and the cache key)
+    "CharucoBoard": BoardType.CHESSBOARD,
 }
 
 

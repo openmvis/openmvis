@@ -518,6 +518,9 @@ def run_cam(config_path, output=None, *, no_rs=False, no_td=False, rerun_outlier
 
     # Resolve options: CLI flag overrides the config value (camera-only canonical).
     corner_mode = corner_subsample or getattr(config, "corner_subsample", "two_anti")
+    from mvis.detection.charuco_board import CharucoBoard
+    if isinstance(board, CharucoBoard):
+        corner_mode = "all"       # ChArUco ids are chessboard corners: nothing to thin
     do_rerun_outliers = rerun_outliers or getattr(config, "rerun_outliers", False)
     do_rerun_viz = rerun_viz or getattr(config, "rerun_visualization", False)
     appendix_max_frames = getattr(getattr(config, "report", None), "appendix_max_frames", 0)

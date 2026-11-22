@@ -64,7 +64,33 @@ _FIELD_ALIASES = {
     "CameraConfig": {"target_hz": "factor_hz"},
     # cam-IMU canonical: sigma_px; per-camera rate canonical: factor_hz
     "CamImuCalibConfig": {"pixel_sigma": "sigma_px", "target_hz": "factor_hz"},
+    # OpenCV's ChArUco / board-generator files call it `dictionary`
+    "BoardConfig": {"dictionary": "aruco_dict"},
 }
+
+
+def _check_board_keys(data: dict, path: str) -> None:
+    """Board-block checks the dataclass defaults would hide: `dictionary` and `aruco_dict`
+    giving two names, or a ChArUco board without a dictionary (the DICT_6X6_250 default
+    finds no corners on a board printed with another one)."""
+    where = path or "board"
+    d, a = data.get("dictionary"), data.get("aruco_dict")
+    if d is not None and a is not None and d != a:
+        raise ValueError(f"{where}: dictionary {d!r} and aruco_dict {a!r} disagree; give one")
+    if data.get("board_type") == "charuco" and d is None and a is None:
+        raise ValueError(f"{where}: a ChArUco board needs its dictionary "
+                         "(aruco_dict: DICT_5X5_250, for example)")
+
+
+def _all_corners_for_charuco(board, holder, explicit: bool) -> None:
+    """ChArUco ids are chessboard corners, not tag * 4 + corner, so corner_subsample
+    has nothing to thin: set it to "all" (warn only when the config asked for another)."""
+    if board.board_type != "charuco" or holder.corner_subsample == "all":
+        return
+    if explicit:
+        logger.warning(f"corner_subsample {holder.corner_subsample!r} has no meaning on a "
+                       "ChArUco board; using 'all'")
+    holder.corner_subsample = "all"
 
 # Boolean aliases whose VALUE inverts: pin_tr -> estimate_readout.
 # pin_tr=True ("pin the readout" = global) == estimate_readout=False, so the canonical
@@ -89,6 +115,8 @@ def _parse_dataclass(data: dict | None, cls: type, path: str = "") -> object:
     """
     if data is None:
         return cls()
+    if cls.__name__ == "BoardConfig":
+        _check_board_keys(data, path)
 
     # Translate field-name aliases to the canonical name (canonical wins on conflict;
     # the alias is consumed so it doesn't trip the unknown-key warning).
@@ -377,6 +405,7 @@ def parse_config(path: str) -> CalibrationConfig:
                                data.get("optimizer"), data, _set_td)
 
     _fill_camera_factor_hz(config.cameras, data.get("cameras", []), config.optimizer)
+    _all_corners_for_charuco(config.board, config, "corner_subsample" in data)
     return config
 
 
@@ -394,6 +423,7 @@ def parse_cam_imu_config(path: str):
     cfg = _parse_dataclass(data, CamImuRunConfig, "cam_imu")
     if isinstance(data, dict) and "estimate" in data:
         _apply_estimate_cam_imu(cfg, data)
+    _all_corners_for_charuco(cfg.board, cfg.solve, True)
     return cfg
 
 
@@ -476,4 +506,6 @@ def parse_cam_run_config(path: str):
 
     _fill_camera_factor_hz(cfg.input.cameras,
                            (data.get("input") or {}).get("cameras", []), cfg.solve)
+    _all_corners_for_charuco(cfg.board, cfg, "corner_subsample" in data
+                             or "corner_subsample" in (data.get("solve") or {}))
     return cfg

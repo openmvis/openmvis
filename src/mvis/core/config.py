@@ -61,6 +61,11 @@ class BoardConfig:
     aruco_dict: str = "DICT_6X6_250"
     marker_size: float = 0.02
     marker_separation: float = 0.005
+    # ChArUco boards printed with OpenCV < 4.6 (other marker layout on even row counts)
+    charuco_legacy: bool = False
+    # ChArUco: refine each corner with cv2.cornerSubPix (OpenCV's own are ~0.5 px off).
+    # Not `refine_subpixel`, which is ArUco marker-corner refinement.
+    charuco_refine: bool = True
     refine_subpixel: bool = False
     # Measured board shape: YAML with `board_shape.heights_m`
     # (one out-of-plane height per corner, as `mvis cam` writes with

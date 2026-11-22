@@ -798,6 +798,12 @@ class CalibrationPipeline:
         self._n_detected = {cid: sum(len(f.observations) for f in fr)
                             for cid, fr in all_frames.items()}
         mode = self._config.corner_subsample
+        from mvis.detection.charuco_board import CharucoBoard
+        if mode != "all" and isinstance(self._board, CharucoBoard):
+            # ChArUco ids are chessboard corners, not tag * 4 + corner: nothing to thin
+            logger.warning(f"corner_subsample '{mode}' has no meaning on a ChArUco board; "
+                           "using 'all'")
+            mode = "all"
 
         # Auto-fallback: if the requested mode thins observations
         # (top_left, bl, br, tr) but the detection is sparse, override

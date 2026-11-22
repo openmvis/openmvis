@@ -203,6 +203,12 @@ class OutputWriter:
                 "points_3d": pts.tolist()
                     if isinstance(pts, np.ndarray) else pts,
             }
+            if hasattr(board, "_charuco_marker"):     # ChArUco: enough to rebuild the board
+                data["board"].update(
+                    squares_rows=int(board._squares_rows), squares_cols=int(board._squares_cols),
+                    square_size=float(board._square_size), marker_size=float(board._charuco_marker),
+                    aruco_dict=board._aruco_dict_name, charuco_legacy=bool(board._legacy_pattern),
+                    charuco_refine=bool(board._refine_corners))
 
         # Corner subsample mode used.
         data["corner_subsample"] = corner_subsample

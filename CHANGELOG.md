@@ -3,6 +3,22 @@
 All notable changes to MVIS are recorded here. Versions follow
 [Semantic Versioning](https://semver.org/); 0.x releases may change the config schema.
 
+## [Unreleased]
+
+## [0.3.0] — 2026-11-22
+
+Changes since 0.2.0. A config that ran on 0.2.0 runs unchanged.
+
+### Added
+
+- ChArUco boards (`board_type: charuco`): chessboard corners named by ArUco markers, so
+  partly visible boards are used. `rows`/`cols` count squares; the dictionary
+  (`aruco_dict`, or OpenCV's `dictionary`) is required. Corners are refined with
+  `cornerSubPix` (`charuco_refine`, on by default), since OpenCV's own are about 0.49 px
+  off. All corners are used (`corner_subsample` has nothing to thin). `mvis doctor`
+  checks the board block. The full results YAML records the ChArUco layout. Needs
+  OpenCV >= 4.7 (the `aruco` extra now asks for it). See `doc/board_charuco.md`.
+
 ## [0.2.0] — 2026-11-19
 
 Changes since 0.1.0. Results files gain fields; nothing is removed or renamed, and a

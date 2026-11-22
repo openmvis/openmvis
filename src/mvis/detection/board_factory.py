@@ -63,6 +63,19 @@ def create_board(config: BoardConfig) -> Board:
             marker_separation=config.marker_separation,
             aruco_dict=config.aruco_dict,
         )
+    elif config.board_type == "charuco":
+        from mvis.detection.charuco_board import CharucoBoard
+
+        # rows/cols count SQUARES here (as board generators print them), not inner corners
+        return CharucoBoard(
+            rows=config.rows,
+            cols=config.cols,
+            square_size=config.square_size,
+            marker_size=config.marker_size,
+            aruco_dict=config.aruco_dict,
+            legacy_pattern=config.charuco_legacy,
+            refine=config.charuco_refine,
+        )
     elif config.board_type == "aruco_features":
         # ArUco tags as geometry-free features (tags on several boards at
         # unknown poses) — for feature-mode (target-free) calibration only.

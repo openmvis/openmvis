@@ -56,7 +56,7 @@ _CV2_DISTS = ("opencv-python", "opencv-contrib-python",
 
 
 def config_needs(path: str) -> set:
-    """Optional components a run config needs: apriltag, aruco, ros1."""
+    """Optional components a run config needs: apriltag, aruco, charuco, ros1."""
     raw = load_yaml(path)
     needs = set()
     bt = (raw.get("board") or {}).get("board_type", "chessboard")
@@ -64,6 +64,8 @@ def config_needs(path: str) -> set:
         needs.add("apriltag")
     if bt.startswith("aruco"):
         needs.add("aruco")
+    if bt == "charuco":
+        needs |= {"aruco", "charuco"}
     inp = raw.get("input") or {}
     cams = inp.get("cameras") or raw.get("cameras") or []
     if inp.get("format") in ("ros1", "ros2") or any(
@@ -93,7 +95,7 @@ def check_env(needs=None, smoke: bool = False) -> list:
                            " — MVIS is tested with gtsam 4.2.x: pip install 'gtsam>=4.2,<4.3'")))
     except Exception as e:                      # noqa: BLE001
         out.append(Finding("env.gtsam", "gtsam", "fail", f"gtsam import failed: {e}"))
-    out += _check_cv2("aruco" in needs)
+    out += _check_cv2("aruco" in needs, "charuco" in needs)
     for key, (mod, extra) in EXTRAS.items():
         try:
             importlib.import_module(mod)
@@ -144,7 +146,7 @@ def _version(mod: str) -> str:
         return ""
 
 
-def _check_cv2(need_aruco: bool) -> list:
+def _check_cv2(need_aruco: bool, need_charuco: bool = False) -> list:
     try:
         import cv2
     except Exception as e:                      # noqa: BLE001
@@ -168,6 +170,11 @@ def _check_cv2(need_aruco: bool) -> list:
                            ("fail" if need_aruco else "warn"),
                            "cv2.aruco available" if has_aruco else
                            "cv2.aruco missing (needed for ArUco boards): pip install 'pymvis[aruco]'"))
+    if need_charuco and has_aruco:
+        ok = hasattr(cv2.aruco, "CharucoDetector")
+        out.append(Finding("env.cv2_charuco", "opencv", "pass" if ok else "fail",
+                           "cv2.aruco.CharucoDetector available" if ok else
+                           f"ChArUco boards need OpenCV >= 4.7 (found {cv2.__version__})"))
     return out
 
 
@@ -246,6 +253,27 @@ def smoke_solve(seed: int = 0) -> Finding:
                        f"synthetic camera solve crashed: {type(e).__name__}: {e}")
 
 
+def _check_charuco(bc) -> list:
+    """ChArUco board block: a known dictionary with room for the board's markers, sizes
+    in metres, marker inside the square. rows/cols count squares (not inner corners)."""
+    from mvis.detection.charuco_board import dictionary_problem
+    out = []
+    name = bc.aruco_dict
+    problem = dictionary_problem(name, bc.rows, bc.cols)
+    if problem:
+        out.append(Finding("board.aruco_dict", "board", "fail", problem))
+    if not 0.002 < bc.square_size < 1.0:
+        out.append(Finding("board.square_size", "board", "fail",
+                           f"square_size {bc.square_size} must be in metres"))
+    if not 0 < bc.marker_size < bc.square_size:
+        out.append(Finding("board.marker_size", "board", "fail",
+                           f"marker_size {bc.marker_size} must be in (0, square_size)"))
+    out.append(Finding("board.charuco_layout", "board", "pass",
+                       f"ChArUco {bc.rows} x {bc.cols} squares = "
+                       f"{(bc.rows - 1) * (bc.cols - 1)} inner corners, {name}"))
+    return out
+
+
 def _exists(out, fid, subject, path, what):
     if path and not os.path.exists(path):
         out.append(Finding(fid, subject, "fail", f"{what} not found: {path}"))
@@ -295,6 +323,8 @@ def check_config(path: str) -> list:
         if ts is not None and not (0.005 < ts < 1.0):
             out.append(Finding("board.tag_size", "board", "fail",
                                f"tag_size {ts} must be in metres"))
+    elif b.get("board_type") == "charuco":
+        out += _check_charuco(cfg.board)
 
     if mode == "cam-imu":
         ci, cin = cfg.input, cfg.camera_input

@@ -38,7 +38,7 @@ continuous-time B-spline trajectory representation.
 | **Temporal offset** | Optimized via B-spline (cam_time_offset_ns) | Cross-correlation + joint optimization | Both support cam-cam td |
 | **Rolling shutter** | Not mentioned in calibration code | Supported (per-camera readout joint opt) | MVIS advantage |
 | **Robust kernel** | Huber (default thresh=4.0 px) | Huber (default thresh=1.345) | MVIS tighter |
-| **Target** | AprilGrid only | AprilGrid, chessboard, ArUco | MVIS more flexible |
+| **Target** | AprilGrid only | AprilGrid, chessboard, ArUco, ChArUco | MVIS more flexible |
 | **Input** | ROS bags, EuRoC | ROS1/ROS2 bags, EuRoC, image folders | MVIS more flexible |
 | **GUI** | Pangolin (OpenGL) with real-time viz | Rerun (optional), HTML report | Different approaches |
 | **Parallelism** | TBB for Jacobian assembly | GTSAM sparse solver | Both parallel |

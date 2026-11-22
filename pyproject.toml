@@ -59,7 +59,7 @@ apriltag = ["aprilgrid>=0.5"]
 # NOTE: opencv-contrib-python and the base opencv-python dependency both provide
 # `cv2`; pip installs both and the last one wins. Prefer `pip install pymvis[aruco]`
 # in a clean env, or uninstall opencv-python first if cv2 misbehaves.
-aruco = ["opencv-contrib-python>=4.5,<4.12"]   # <4.12: same numpy>=2 rule as opencv-python
+aruco = ["opencv-contrib-python>=4.7,<4.12"]   # >=4.7: CharucoDetector; <4.12: same numpy>=2 rule as opencv-python
 ros1 = ["rosbags>=0.11.6"]   # ROS1 and ROS2 bags; 0.11.6 reads ROS2 bags with empty type hashes
 # PyAV decodes the H.265 camera streams in the MCAP converter (also used by the
 # PennCOSYVIO converter, which has no extra of its own: `pip install av`).
