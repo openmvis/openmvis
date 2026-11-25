@@ -6,7 +6,7 @@ authors:
   - family-names: Yang
     given-names: Yulin
     email: contact@openmvis.com
-version: 0.3.0
+version: 0.4.0
 doi: 10.5281/zenodo.24239182
 identifiers:
   - type: doi
@@ -18,6 +18,9 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.24385919
     description: "Version DOI for v0.2.0 (Zenodo)"
+  - type: doi
+    value: 10.5281/zenodo.24444718
+    description: "Version DOI for v0.3.0 (Zenodo)"
 license: GPL-3.0-only
 url: "https://openmvis.com"
 repository-code: "https://github.com/openmvis/openmvis"

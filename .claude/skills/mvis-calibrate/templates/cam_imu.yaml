@@ -22,6 +22,10 @@ camera_input:
   cameras:                           # one entry per cam_topics entry, same order
     - {}                             # base camera: full rate
     - factor_hz: 10.0                # non-base cameras: Full 10 | Fast 4
+# Local gravity (doc/local_gravity.md): ask where the data was recorded and set one of these; left out,
+# MVIS uses 9.81 and the accel scale absorbs g_local / 9.81 (-0.23 % to +0.30 % by latitude).
+# gravity: 9.7879                                   # m/s^2, or:
+# site: {latitude_deg: 22.54, altitude_m: 20}
 solve:
   max_iterations: 40
   rms_gate_px: 3.0

@@ -28,6 +28,7 @@ import numpy as np
 
 from mvis.core import shutter
 from mvis.core.config import CalibrationConfig
+from mvis.core.gravity import DEFAULT_HINT
 from mvis.core.types import FrameObservations
 from mvis.detection.board_factory import create_board
 from mvis.io.data_source import stream_cameras
@@ -457,6 +458,8 @@ def calibrate_cam_imu(config) -> dict:
     from mvis.calibration.pipeline_cam_imu import run_cam_imu_calibration_multi
 
     ci, cin, out_cfg = config.input, config.camera_input, config.output
+    if config.solve.gravity_source == "default":
+        logger.warning(DEFAULT_HINT)
     board = create_board(config.board)
     pts_B = apply_board_heights(np.asarray(board.all_points_3d(), float), config.board)
 
@@ -727,6 +730,17 @@ def _summary_sensor_fields(r, summary: dict) -> None:
         summary["Dw_diag"], summary["Da_diag"] = imu_diag(ii, 5)
         if model == "calyx":       # decomposed physical view (user default)
             summary.update(calyx_dw_decomposed(ii.Dw(), 5))
+    if d.get("gravity") is not None:      # |g| the solve held fixed (mvis.core.gravity)
+        summary["gravity_mps2"] = round(float(d["gravity"]), 6)
+        summary["gravity_source"] = d.get("gravity_source", "default")
+        if d.get("gravity_site"):
+            summary["gravity_site"] = d["gravity_site"]
+    sr = d.get("seed_report") or {}
+    if "g_norm_ok" in sr:   # init checks judge the seed only; ok does not use them
+        summary["init_gates"] = {"g_norm_ls": round(float(sr["g_norm_ls"]), 4),
+                                 "g_norm_ok": bool(sr["g_norm_ok"]),
+                                 "scale": round(float(sr["scale"]), 4),
+                                 "scale_ok": sr.get("scale_ok")}
     if d.get("t_ga") is not None:                  # gyro<->accel time offset
         summary["t_ga_ms"] = round(1e3 * d["t_ga"], 4)
         if d.get("t_ga_sigma") is not None:

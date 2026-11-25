@@ -304,3 +304,23 @@ def test_failed_pass1_marks_the_retimed_solve_not_ok(monkeypatch):
     assert len(calls) == 2 and res.ok is False
     assert res.diagnostics["sensor_clock_pass1_lm_no_step"]["reason"] == "forced"
     assert "lm_no_step" not in res.diagnostics
+
+
+def test_failed_init_gate_warns_but_keeps_board_result_ok(monkeypatch, caplog):
+    """Board path: init gates judge the seed only. A failed |g| gate is logged as a
+    warning and does not make a good solve not ok (TUM-VI raw, user 2026-11-24)."""
+    from mvis.calibration import pipeline_cam_imu as P
+    orig = P.initialize_cam_imu
+
+    def init(*a, **k):
+        s = orig(*a, **k)
+        s.report["g_norm_ok"] = False
+        return s
+    monkeypatch.setattr(P, "initialize_cam_imu", init)
+    gt, cams, t_imu, w_m, a_m, aux = _scenario()
+    with caplog.at_level("WARNING", logger=P.__name__):
+        res = recover(cams, gt.board_points_local, t_imu, w_m, a_m, aux, CamImuCalibConfig(max_iterations=2))
+    assert res.diagnostics["iterations"] > 0 and res.ok is True
+    assert res.diagnostics["seed_report"]["g_norm_ok"] is False
+    assert "init gate(s) failed: g_norm_ok" in caplog.text
+    assert "init gate(s) failed (seed only, not in ok): g_norm_ok" in P.format_report(res)

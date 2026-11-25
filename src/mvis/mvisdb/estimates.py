@@ -210,12 +210,13 @@ def estimates_from_cam_imu_result(result, *, state_hz: float | None = None) -> E
     the result carries endpoint biases + drift, not per-knot arrays, and
     fabricating knots from a linear model would misrepresent solver output.
     """
+    from mvis.core.gravity import of_result
     from mvis.mvisdb.mvisdatabase import (
         ImuIntrinsicsModel, ImuIntrinsicsState, WorldFrame,
     )
     es = EstimateStates(reference_stream=(SensorType.IMU, 0),
                         state_hz=state_hz,
-                        world_frame=WorldFrame())
+                        world_frame=WorldFrame(g_magnitude=of_result(result)))
 
     # base_state: per-knot trajectory + velocity + biases, extracted EXACTLY
     # from the converged Values (X(k) pose, _Vk(k) = [v, b_g, b_a] 9-vector —

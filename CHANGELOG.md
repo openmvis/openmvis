@@ -5,6 +5,49 @@ All notable changes to MVIS are recorded here. Versions follow
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-11-24
+
+Changes since 0.3.0. A config that ran on 0.3.0 runs unchanged: without `gravity:` or `site:`
+the solve keeps 9.81, as before.
+
+### Added
+
+- Cam-IMU report (HTML, text, `cam_imu.json` `gravity_site`) names the gravity used and its site: city,
+  latitude, longitude, altitude. `site:` accepts `longitude_deg` (a label; g ignores it). Regression rows that
+  keep 9.81 (VI-Rig, ELP, ELP+T265, TUM-VI) now give `gravity: 9.81` plus their site, so g is unchanged.
+- Local gravity in camera + IMU solves: `gravity:` (m/s²) or `site: {latitude_deg, altitude_m}`
+  (WGS84 normal gravity). The accelerometer scale absorbs g_true / g_used, so the fixed 9.81
+  read it 0.23 % high in Shenzhen and up to 0.30 % at the equator. Neither key: 9.81, results
+  unchanged. The value used is recorded in the results, the calibration YAML, the report and
+  the run database (whose world frame used to say 9.80665). Without either key the run log
+  warns that 9.81 is in use (`mvis check` still passes). `doc/local_gravity.md` lists latitude and altitude
+  for common recording places.
+- Regression families T13 and T14, the first on a ChArUco board: ALG Tech's AVS111C-Y
+  global-shutter and AVS115D-Y rolling-shutter stereo modules with their IMU, one
+  recording each, camera + IMU in both IMU models, at Shenzhen's gravity (`site:`). They
+  are full tier only (`Family.seed_level`), so the fast and mid gates are unchanged; full
+  grows from 176 to 180 rows. Kalibr and Basalt have no comparison rows for them.
+- Regression family T11 (Looper Insight-9, recorded in Shenzhen) runs at the local gravity
+  (`site:`); its 20 baselines were re-blessed. Unlike T13 / T14, where only the accelerometer
+  scale moved (by exactly 9.7879 / 9.81), the Looper rig's weak focal / depth constraint lets
+  gravity reach the focal lengths too: fx -0.11 %, lever up to +0.4 mm, accel scale x 0.9977-0.9988;
+  reprojection unchanged. A 9.81 control on the same code reproduced the old baselines.
+- Regression family T12 (Monado MGC, HP Reverb G2) runs at Córdoba's gravity (`site:`; the recording
+  place, confirmed by the dataset's first author); its 8 baselines were re-blessed. Accel scale
+  x 0.9984-0.9992; focal length <= 0.04 px, lever <= 0.05 mm, td <= 0.006 ms; reprojection unchanged.
+- Board and multi-camera cam-IMU runs report failed init checks (`g_norm_ok`, `scale_ok`): a log
+  warning, a line in the text report, and an `init_gates` block in `cam_imu.json` (gravity norm, scale,
+  pass/fail per check). They judge the seed, not the solve, so `ok` still follows the solve only.
+
+### Fixed
+
+- Gyro-only auxiliary IMUs: the time offset was applied twice (the window was already shifted by the
+  seed td), so a 50 ms offset came out as 0.35 ms; it now comes out as 49.85 ms. No example or
+  regression config uses `gyro_only`.
+- Cam-IMU report: the bias values labelled "mean" are the first state's and now say so; the bias
+  evolution plot shows the per-state biases, each axis minus its own mean (in the legend), instead of
+  a straight first-to-last line.
+
 ## [0.3.0] — 2026-11-22
 
 Changes since 0.2.0. A config that ran on 0.2.0 runs unchanged.

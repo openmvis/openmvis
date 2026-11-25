@@ -55,7 +55,8 @@ class ImuFactorACI_Multi_In_SO3:
     """Gyro-only ACI factor: base trajectory + extrinsic/td/Dw -> gyro rotation."""
 
     def __init__(self, D_R, P_meas, Dt, bg_init, intr_init,
-                 J_R_bg, J_R_in, w_inIs0, w_inIs1, base_calib: ImuCalib):
+                 J_R_bg, J_R_in, w_inIs0, w_inIs1, base_calib: ImuCalib,
+                 window_td: float = 0.0):
         self.D_R = np.asarray(D_R, float)
         self.P_meas = np.asarray(P_meas, float)       # 6x6 [theta, bg]
         self.Dt = float(Dt)
@@ -66,17 +67,22 @@ class ImuFactorACI_Multi_In_SO3:
         self.w_inIs0 = np.asarray(w_inIs0, float)
         self.w_inIs1 = np.asarray(w_inIs1, float)
         self.base_calib = base_calib
+        # window_td: offset already absorbed by shifting the aux window (as in
+        # ImuFactorACI_Multi_In_V); the factor propagates only calib.td - window_td.
+        self.window_td = float(window_td)
 
     @classmethod
-    def from_preintegrator(cls, pre, T_ext_init, td_init):
-        """pre = ACIGyroPreintegrator fed the AUX gyro interval (aux frame)."""
+    def from_preintegrator(cls, pre, T_ext_init, td_init, window_td: float = 0.0):
+        """pre = ACIGyroPreintegrator fed the AUX gyro interval (aux frame).
+        window_td = offset already baked into the aux window slice."""
         base_calib = ImuCalib(T_ext_init, td_init, pre.intr)
         return cls(pre.D_R, pre.P_meas, pre.Dt, pre.b_g_init, pre.intr,
-                   pre.J_R_bg, pre.J_R_in, pre.w_m_s, pre.w_m_e, base_calib)
+                   pre.J_R_bg, pre.J_R_in, pre.w_m_s, pre.w_m_e, base_calib,
+                   window_td=window_td)
 
     # ------------------------------------------------------------------
     def _aux_rotations(self, pose0, pose1, calib: ImuCalib):
-        R, td = calib.R_IstoI, calib.td
+        R, td = calib.R_IstoI, calib.td - self.window_td   # RESIDUAL
         return (imu_aux_rotation(pose0, R, td, self.w_inIs0),
                 imu_aux_rotation(pose1, R, td, self.w_inIs1))
 
@@ -120,7 +126,7 @@ class ImuFactorACI_Multi_In_SO3:
         err, c = self._common(pose0, pose1, bg0, bg1, xi_calib)
         calib, d_th = c["calib"], c["d_th"]
         R_bcorr, D_R_hat_c = c["R_bcorr"], c["D_R_hat_c"]
-        R_IstoI, td = calib.R_IstoI, calib.td
+        R_IstoI, td = calib.R_IstoI, calib.td - self.window_td   # RESIDUAL
         Jl = so3_left_jacobian(d_th)
         W = whitener_rot_corrected(self.P_meas, d_th, Jl)
         e0 = W @ err

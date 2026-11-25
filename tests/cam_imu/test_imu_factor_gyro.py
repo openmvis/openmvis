@@ -110,3 +110,27 @@ def test_gyro_factor_in_graph(model):
     vals.insert(keys[4], xi_calib)
     assert factor.unwhitenedError(vals).shape == (6,)
     assert factor.linearize(vals) is not None
+
+
+@pytest.mark.parametrize("model", [KALIBR, RPNG])
+def test_gyro_factor_window_td_propagates_residual_only(model):
+    """With the aux window pre-shifted by window_td (td_init = 0.004 + window_td),
+    the factor must propagate only calib.td - window_td: same error as the
+    unshifted factor, and the analytic Jacobian still matches finite differences."""
+    import copy
+    from mvis.calibration.factors.imu_calib import ImuCalib
+    f = _build(model)
+    w_td = 0.05
+    fw = copy.copy(f)
+    fw.window_td = w_td
+    fw.base_calib = ImuCalib(f.base_calib.T, f.base_calib.td + w_td,
+                             f.base_calib.imu_in)
+    for seed in (4, 12):
+        pose0, pose1, bg0, bg1, xi_calib, _ = _consistent(f, model, seed=seed)
+        e, Ha = fw.error_and_jacobians(pose0, pose1, bg0, bg1, xi_calib)
+        assert np.allclose(e, f.whitened_error(pose0, pose1, bg0, bg1, xi_calib),
+                           atol=1e-12)
+        _, Hn = fw._numerical_jacobians(pose0, pose1, bg0, bg1, xi_calib)
+        for i, (a, n) in enumerate(zip(Ha, Hn)):
+            den = max(1.0, np.max(np.abs(a)), np.max(np.abs(n)))
+            assert np.max(np.abs(a - n)) / den < 1e-4, f"seed {seed} block {i}"

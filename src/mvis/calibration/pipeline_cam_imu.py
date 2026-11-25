@@ -58,7 +58,7 @@ from typing import NamedTuple
 import numpy as np
 import gtsam
 
-from .cam_imu_init import (CamImuSeed, GRAVITY_MAG, initialize_cam_imu,
+from .cam_imu_init import (CamImuSeed, initialize_cam_imu,
                            initialize_imu_imu, pnp_pose_track, _slice_imu,
                            _interp_vec, _is_monotonic)
 from .factors.aci import (ACIPreintegrator, ACIGyroPreintegrator, _IntrPack,
@@ -71,6 +71,7 @@ from .factors.pose_interpolation import interp_pose
 from .factors.camera_imu_factor import CameraCalibImuFactor
 from .factors.imu_segment import ImuSegment
 from mvis.core.shutter import row_offset
+from mvis.core.gravity import describe as describe_gravity
 from .factors.camera_feature_factor import CameraFeatureInterpFactor
 from .factors.imu_factor import ImuFactorACI_In
 from .factors.imu_factor_multi import ImuFactorACI_Multi_In_V
@@ -671,7 +672,7 @@ def build_joint_graph(t_states, frames_per_cam, T_init, v_init,
 
     Returns (graph, values, cam_factors, imu_factors, aux_factors);
     cam_factors entries are (c, j, factor)."""
-    g_inW = np.array([0.0, 0.0, -GRAVITY_MAG])
+    g_inW = np.array([0.0, 0.0, -cfg.gravity])
     K = len(t_states) - 1
     n_cams_g = len(frames_per_cam)
     feature = (structure == "feature")
@@ -880,7 +881,7 @@ def build_joint_graph(t_states, frames_per_cam, T_init, v_init,
                                       t_states[ka] - sd.td, t_states[kb] - sd.td)
                 pre.feed_imu_interval(t, w)
                 fac = ImuFactorACI_Multi_In_SO3.from_preintegrator(
-                    pre, sd.T_IstoI, sd.td)
+                    pre, sd.T_IstoI, sd.td, window_td=sd.td)
                 graph.add(fac.make_factor(X(ka), X(kb),
                                           _BGs(s, ka), _BGs(s, kb), _As(s)))
                 facs.append((ka, kb, fac))
@@ -1565,7 +1566,7 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
             seeds.append(seed)
         else:
             seeds.append(initialize_cam_imu(t_kept, T_CtoB_kept,
-                                            t_imu, w_m, a_m,
+                                            t_imu, w_m, a_m, g_mag=cfg.gravity,
                                             **cfg.init_kwargs))
     seed = seeds[0]
 
@@ -1591,7 +1592,7 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
     t_states = np.asarray(t_kept0, float)[keep]
     T_CtoB_states = [T for T, kp in zip(T_CtoB_kept0, keep) if kp]
 
-    g_inW = np.array([0.0, 0.0, -GRAVITY_MAG])
+    g_inW = np.array([0.0, 0.0, -cfg.gravity])
     T_CtoI_inv = seed.T_CtoI.inverse()
     # T_ItoW = T_BinW . T_CtoB . T_CtoI^-1  (camera-to-world via the board)
     T_init = [seed.T_BinW.compose(T_CtoB).compose(T_CtoI_inv)
@@ -1838,6 +1839,7 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
     # the valid corner norms squared IS the total squared vision residual
     cam_cost = float(np.sum(corner_px ** 2)) / cfg.sigma_px ** 2 * 0.5
     diagnostics = {
+        'gravity': cfg.gravity, 'gravity_source': cfg.gravity_source, 'gravity_site': cfg.gravity_site,
         'iterations': opt.iterations(),
         'tga_relinearizations': list(getattr(opt, 'relinearizations', [])),
         'err_init': err_init, 'err_final': err_final,
@@ -1873,8 +1875,16 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
         diagnostics['board_heights'] = _board_heights_report(
             res, marg, board_points, pids_per_cam)
     _tga_diagnostics(diagnostics, res, marg)
-    ok = bool(seed.report.get('gates', {}).get('ok', True)) and \
-        np.isfinite(diagnostics['reproj_rms_px'])
+    # init gates (g_norm_ok, scale_ok) judge the seed, not the solve: a raw IMU
+    # with a large accel offset (TUM-VI BMI160, ~1.3 m/s²) fails |g| at init and
+    # still solves well. Warn and keep them in diagnostics['seed_report'].
+    failed_gates = [g for g in ('g_norm_ok', 'scale_ok') if seed.report.get(g) is False]
+    if failed_gates:
+        logger.warning("cam-IMU init gate(s) failed: %s (|g| %.3f, scale %.3f); "
+                       "seed only, not used for ok", ', '.join(failed_gates),
+                       seed.report.get('g_norm_ls', float('nan')),
+                       seed.report.get('scale', float('nan')))
+    ok = bool(np.isfinite(diagnostics['reproj_rms_px']))
     rms_gate = float(getattr(cfg, 'rms_gate_px', 0.0) or 0.0)
     if rms_gate > 0 and diagnostics['reproj_rms_px'] > rms_gate:
         ok = False
@@ -1973,7 +1983,7 @@ def run_cam_imu_calibration_feature_multi(cams, t_imu, w_m, a_m, *,
     from .mono_sfm import normalize_detections, planar_sfm, general_sfm
     cfg = config or CamImuCalibConfig()
     t_imu, w_m, a_m, aux_imus = _upsampled_imus(cfg, t_imu, w_m, a_m, aux_imus)
-    g_inW = np.array([0.0, 0.0, -GRAVITY_MAG])
+    g_inW = np.array([0.0, 0.0, -cfg.gravity])
     sfm_fn = general_sfm if sfm_mode == "general" else planar_sfm
     sfm_kwargs = sfm_kwargs or {}
 
@@ -1985,7 +1995,7 @@ def run_cam_imu_calibration_feature_multi(cams, t_imu, w_m, a_m, *,
         sfm = sfm_fn(cam['t_cam'], [t[0] for t in tr], [t[1] for t in tr],
                      **sfm_kwargs)
         seed = initialize_cam_imu(sfm.t, sfm.poses, t_imu, w_m, a_m,
-                                  board_mode=False, **cfg.init_kwargs)
+                                  board_mode=False, g_mag=cfg.gravity, **cfg.init_kwargs)
         return sfm, seed
 
     # --- base camera: trajectory + shared metric world landmark map ---
@@ -2216,6 +2226,7 @@ def run_cam_imu_calibration_feature_multi(cams, t_imu, w_m, a_m, *,
     imus = _aux_imu_entries(res, marg, aux_data, aux_factors)
 
     diagnostics = {
+        'gravity': cfg.gravity, 'gravity_source': cfg.gravity_source, 'gravity_site': cfg.gravity_site,
         'structure': 'feature', 'sfm_mode': sfm_mode, 'iterations': n_iters,
         **reproj_entry(corner_px, cfg.sigma_px),
         'reproj_frame_cam': fcam, 'reproj_per_frame': rms, 'n_states': len(t_states),
@@ -2281,6 +2292,8 @@ def format_report(r: CamImuCalibResult) -> str:
         f"T_CtoI trans (m): {np.array2string(p, precision=4)} "
         f"(sigma {np.array2string(sig[3:6], precision=4)})",
         "-- imu --",
+        *([f"gravity: {describe_gravity(d['gravity'], d.get('gravity_source', 'default'), d.get('gravity_site'))}"]
+          if d.get("gravity") is not None else []),
         f"b_g: {np.array2string(r.b_g, precision=5)}  "
         f"drift {np.array2string(r.b_g_drift, precision=5)}",
         f"b_a: {np.array2string(r.b_a, precision=4)}  "
@@ -2303,6 +2316,11 @@ def format_report(r: CamImuCalibResult) -> str:
         lines += [ln for ln in (_blk("dw", "d_Dw"), _blk("da", "d_Da"),
                                 _blk("tg", "d_Tg"), _blk("r", "d_R_acc"))
                    if ln is not None]
+    sr = (r.diagnostics or {}).get("seed_report") or {}
+    failed = [g for g in ("g_norm_ok", "scale_ok") if sr.get(g) is False]
+    if failed:
+        lines.append(f"init gate(s) failed (seed only, not in ok): {', '.join(failed)}  "
+                     f"|g| {sr.get('g_norm_ls', float('nan')):.3f}  scale {sr.get('scale', float('nan')):.3f}")
     lines.append(f"ok: {r.ok}")
     return "\n".join(lines)
 

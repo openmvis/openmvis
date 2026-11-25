@@ -453,6 +453,47 @@ def test_aux_imu_large_td_window_shift():
     assert m['chi2_dof'] < 3.0
 
 
+def test_aux_imu_gyro_only_large_td_window_shift():
+    """Gyro-only aux with a LARGE (50 ms) offset: the aux window is shifted by
+    the init td_s, so the SO3 factor must propagate only the residual
+    (calib.td - window_td). Propagating the full td counts it twice."""
+    from mvis.simulation.scenario import AuxImu
+
+    T_IstoI = gtsam.Pose3(gtsam.Rot3.Expmap(np.array([0.3, -1.2, 0.5])),
+                          gtsam.Point3(0.08, -0.04, 0.03))
+    td_s, bg_s = 0.050, np.array([-0.008, 0.015, -0.01])
+    traj = load_trajectory(_TRAJ, dt=0.05)
+    sc = make_scenario(
+        traj, t0=traj.start_time + 1.0, depth=3.0, board=Chessboard(7, 7, 0.10),
+        cal=_cal_from_vector(_RADTAN, False), T_CtoI=_T_CtoI,
+        imu_intr=ImuModel(model=RPNG), b_g=_BG, b_a=_BA, image_size=_IMG,
+        td_cam=_TD, sigma_px=0.5,
+        aux=AuxImu(T_IstoI=T_IstoI, intr=ImuModel(model=RPNG),
+                   b_g=bg_s, b_a=np.zeros(3), td=td_s))
+    t_cam, cam, s = _data(sc, win=30.0, seed=21)
+    t0 = traj.start_time + 1.0
+    t_aux = imu_times(t0 - 0.3, t0 + 30.3, 250.0)
+    sa = sc.aux_imu(t_aux, seed=22)
+    pts = np.asarray(Chessboard(7, 7, 0.10).all_points_3d(), float)
+    cfg = CamImuCalibConfig(estimate_t_ga=False, state_hz=0.0, sigma_px=0.5,
+                            huber_px=2.0, imu_intrinsics="dw_da", factor_hz=0.0)
+    res = run_cam_imu_calibration_multi(
+        [dict(t_cam=t_cam, ids_list=list(cam.ids), uv_list=list(cam.uv),
+              cal_vec=_RADTAN, image_size=_IMG)],
+        pts, s.t, s.w_m, s.a_m,
+        aux_imus=[dict(t_imu=sa.t, w_m=sa.w_m, a_m=sa.a_m, name='aux',
+                       gyro_only=True)],
+        config=cfg)
+    m = res.imus[0]
+    print("\ngyro-only large td:", m['td'], "sigma", m['calib_sigma'][6],
+          "seed td", m['seed_report'].get('td'), "chi2", m['chi2_dof'])
+    d = T_IstoI.localCoordinates(m['T_IstoI'])
+    assert abs(m['td'] - td_s) < max(3 * m['calib_sigma'][6], 5e-3), (
+        f"gyro-only large aux td {m['td']:+.5f} vs {td_s:+.5f}")
+    assert np.linalg.norm(d[0:3]) < 6e-3, f"rot {d[0:3]}"
+    assert m['chi2_dof'] < 3.0
+
+
 def test_aux_imu_does_not_bias_base_gyro_scale():
     """C7a arbiter: adding an aux IMU must NOT introduce a common-mode bias
     in the BASE gyro scale (the real-data C3->C6 +0.5% shift was suspected to

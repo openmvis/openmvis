@@ -19,6 +19,7 @@
 gtsam cal objects, a B-spline trajectory through the solved states, and the
 extracted GT parameter set (Task 2)."""
 import json
+from mvis.core.gravity import of_result
 import numpy as np
 import gtsam
 from dataclasses import dataclass, asdict
@@ -170,7 +171,7 @@ def capture_gt(result):
         T_BinW=_P(result.T_BinW),
         t_states=[float(t) for t in ts], T_states=T_states,
         imu_model=str(getattr(result, "imu_model", "calyx")),
-        g_inW=[0.0, 0.0, -9.81])
+        g_inW=[0.0, 0.0, -of_result(result)])
 
 
 def gt_to_json(gt, path):
@@ -192,7 +193,7 @@ def ground_truth_from_result(result, image_sizes) -> "GroundTruth":
     the recovered IMU-world trajectory (`T_ItoW` states), board pose, EVERY camera
     ({intr8, T_CtoI, td, readout, is_fisheye, model, image_size}), and base + aux IMUs
     ({xi24, T_IstoI, td}). `image_sizes` is a per-camera (w, h) list (the result does
-    not store it). World is gravity-aligned, so `g_inW = [0, 0, -9.81]`."""
+    not store it). World is gravity-aligned, g_inW = [0, 0, -|g|] with the solve's |g| (9.81 by default)."""
     from mvis.calibration.pipeline_cam_imu import X
 
     t_states = np.asarray(result.t_states, float)
@@ -217,4 +218,5 @@ def ground_truth_from_result(result, image_sizes) -> "GroundTruth":
         b_g=np.asarray(result.b_g, float).tolist(), b_a=np.asarray(result.b_a, float).tolist(),
         T_BinW=result.T_BinW.matrix().tolist(),
         t_states=t_states.tolist(), T_states=T_states,
-        imu_model=str(getattr(result, "imu_model", "calyx")), g_inW=[0.0, 0.0, -9.81])
+        imu_model=str(getattr(result, "imu_model", "calyx")),
+        g_inW=[0.0, 0.0, -of_result(result)])

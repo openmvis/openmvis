@@ -82,6 +82,18 @@ def _check_board_keys(data: dict, path: str) -> None:
                          "(aruco_dict: DICT_5X5_250, for example)")
 
 
+def _resolve_gravity(cfg, data: dict) -> None:
+    """Resolve the run config's `gravity` / `site` (or `solve.gravity`, the same key) into
+    cfg.solve.gravity and cfg.solve.gravity_source (mvis.core.gravity)."""
+    from mvis.core.gravity import resolve, site_record
+    solve_g = (data.get("solve") or {}).get("gravity")
+    if solve_g is not None and cfg.gravity is not None and float(solve_g) != float(cfg.gravity):
+        raise ValueError(f"gravity {cfg.gravity} and solve.gravity {solve_g} disagree; give one")
+    g = cfg.gravity if cfg.gravity is not None else solve_g
+    cfg.solve.gravity, cfg.solve.gravity_source = resolve(g, cfg.site or None)
+    cfg.solve.gravity_site = site_record(cfg.site)
+
+
 def _all_corners_for_charuco(board, holder, explicit: bool) -> None:
     """ChArUco ids are chessboard corners, not tag * 4 + corner, so corner_subsample
     has nothing to thin: set it to "all" (warn only when the config asked for another)."""
@@ -424,6 +436,7 @@ def parse_cam_imu_config(path: str):
     if isinstance(data, dict) and "estimate" in data:
         _apply_estimate_cam_imu(cfg, data)
     _all_corners_for_charuco(cfg.board, cfg.solve, True)
+    _resolve_gravity(cfg, data if isinstance(data, dict) else {})
     return cfg
 
 

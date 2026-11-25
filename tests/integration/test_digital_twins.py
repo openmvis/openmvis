@@ -115,3 +115,39 @@ def test_aux_imu_is_recovered_without_noise():
     r = solve(twin, seed=0, noise=False)["aux"][0]
     assert np.linalg.norm(r["lever_mm"]) < 2.0
     assert abs(r["td_ms"]) < 0.1 and abs(r["t_ga_ms"]) < 0.5
+
+
+def test_local_gravity_removes_the_accel_scale_bias():
+    """The twin recorded at Shenzhen's gravity (9.7879): solved at MVIS's default 9.81 the accelerometer
+    scale reads high on every axis (+0.11 to +0.20 % on this window); solved with `gravity` set it gets back
+    the matched solve. Not compared with zero: an 8 s window leaves the z scale off by itself (+0.46 %)."""
+    import copy
+    g = 9.787855
+    base = np.array(run(GS, noise=False)["accel_scale_pct"])            # truth 9.81, solve 9.81
+    tw = copy.deepcopy(_twin(GS))
+    tw.truth["g_inW"] = [0.0, 0.0, -g]
+    wrong = np.array(solve(tw, seed=0, noise=False)["accel_scale_pct"])
+    right = np.array(solve(tw, seed=0, noise=False, gravity=g)["accel_scale_pct"])
+    assert np.all(wrong - base > 0.08), wrong - base
+    np.testing.assert_allclose(right, base, atol=0.01)
+
+
+def test_local_gravity_reaches_the_outputs():
+    """A solve with `gravity` set records it in the results dict, the calib dict, the mvisdb world frame and a
+    twin captured from it."""
+    from mvis.calibration import pipeline_cam_imu as P
+    from mvis.io.cam_imu_output import build_cam_imu_dict
+    from mvis.mvisdb.estimates import estimates_from_cam_imu_result
+    from mvis.simulation import from_result
+    from mvis.simulation.twin import config_for, simulate
+    g = 9.787855
+    tw = _twin(GS)
+    cams, t, w, a = simulate(tw, seed=0, noise=False)
+    res = P.run_cam_imu_calibration_multi(cams, tw.board_points, t, w, a,
+                                          config=config_for(tw, vision_pose="imu", gravity=g, gravity_source="site"))
+    assert (res.diagnostics["gravity"], res.diagnostics["gravity_source"]) == (g, "site")
+    assert build_cam_imu_dict(res)["imus"][0]["gravity"] == g
+    assert estimates_from_cam_imu_result(res).world_frame.g_magnitude == g
+    assert from_result.capture_gt(res).g_inW == [0.0, 0.0, -g]
+    sizes = [c["image_size"] for c in cams]
+    assert from_result.ground_truth_from_result(res, sizes).g_inW == [0.0, 0.0, -g]

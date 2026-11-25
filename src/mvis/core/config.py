@@ -639,6 +639,11 @@ class CamImuCalibConfig:
     # Cam-IMU canonical; default "all" (accuracy) — intentionally differs from the
     # camera-only CalibrationConfig.corner_subsample default "two_anti" (speed).
     corner_subsample: str = "all"
+    # |g| the solve holds fixed, m/s^2. Set from the run config's `gravity` / `site` (mvis.core.gravity);
+    # 9.81 when neither is given. gravity_source: "default" | "config" | "site".
+    gravity: float = 9.81
+    gravity_source: str = "default"
+    gravity_site: dict | None = None     # the config `site` + its g_site, for the report (mvis.core.gravity.site_record)
     # priors on the first state (gauge handles pose)
     sigma_v0: float = 0.5
     sigma_bg0: float = 0.01
@@ -751,6 +756,10 @@ class CamImuRunConfig:
     # optional published/known values for the report's vs-reference section
     # ({label, baseline_mm, lever_mm{cam:[..]}, rotation_rad{cam:..}}; rotation_deg is still read).
     reference: dict = field(default_factory=dict)
+    # Local gravity (mvis.core.gravity): `gravity` in m/s^2, or `site: {latitude_deg, altitude_m}`.
+    # Neither: 9.81. Resolved into solve.gravity by the parser.
+    gravity: float | None = None
+    site: dict = field(default_factory=dict)
 
     @classmethod
     def from_yaml(cls, path: str) -> "CamImuRunConfig":

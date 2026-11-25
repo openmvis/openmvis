@@ -38,12 +38,14 @@ rows carry ``rot_rad``, ``rot_angle_rad``, ``rot_sig_rad`` (aux IMUs ``rot_rad``
 """
 from __future__ import annotations
 
+import html
 import logging
 
 import numpy as np
 
 from mvis.calibration.factors.lie_groups import log_so3
 from mvis.core.camera_models import KB_THETA_MODELS, dist_names
+from mvis.core.gravity import describe as describe_gravity
 from mvis.imu import CALYX
 from mvis.calibration.reproj_stats import corner_stats
 from mvis.io.result_schema import calyx_dw_qr, cam_imu_sensor_rows, imu_diag
@@ -343,9 +345,9 @@ def _imu_fold(m, role: str, solve: dict, chi2, calib_doc, idx: int) -> str:
     groups = [
         group("Model", [("IMU model", model or None),
                         ("intrinsics", "pinned" if m.get("pinned") else ("estimated" if m.get("Dw") else None))]),
-        group("Biases", [("b_g mean (rad/s)", vec(m.get("b_g"), "rads") if m.get("b_g") else None),
+        group("Biases", [("b_g (first state, rad/s)", vec(m.get("b_g"), "rads") if m.get("b_g") else None),
                          ("b_g drift (rad/s)", vec(m.get("b_g_drift"), "rads") if m.get("b_g_drift") else None),
-                         ("b_a mean (m/s²)", vec(m.get("b_a"), "mps2") if m.get("b_a") else None),
+                         ("b_a (first state, m/s²)", vec(m.get("b_a"), "mps2") if m.get("b_a") else None),
                          ("b_a drift (m/s²)", vec(m.get("b_a_drift"), "mps2") if m.get("b_a_drift") else None)]),
         group("Gyro", [("Dw diag", vec(m["Dw_diag"], "scale") if m.get("Dw_diag") else None),
                        ("scale diag(U)", vec(dd["scale"], "scale") if dd else None),
@@ -418,6 +420,9 @@ def cam_imu_text_report(result, reference=None) -> str:
          + f"states {d.get('n_states', 0)}  iters {d.get('iterations', 0)}",
          f"chi2/dof  cam {d.get('cam_chi2_dof', float('nan')):.2f}   "
          f"imu {d.get('imu_chi2_dof', float('nan')):.2f}"]
+    if d.get("gravity") is not None:
+        L.append("gravity: " + describe_gravity(float(d["gravity"]), d.get("gravity_source", "default"),
+                                                d.get("gravity_site")))
     for r in rows:
         L += ["", f"cam{r['id']}  ({r['model']})",
               _text_reproj_line(r),
@@ -937,7 +942,10 @@ def _plot_excitation(result):
 
 
 def _plot_bias_evolution(result):
-    """b + drift over the run (the linear bias model the solver estimates)."""
+    """Per-state gyro / accel bias over the run, each axis minus its own mean (the mean is in the
+    legend): the solver keeps one random-walk bias per state
+    (_Vk(k) = [v, b_g, b_a] in result.values). Without values, falls back to the first-to-last
+    chord b -> b + drift, titled as such (not the solver's model)."""
     t = getattr(result, "t_states", None)
     if t is None or len(t) < 2:
         return None
@@ -945,17 +953,31 @@ def _plot_bias_evolution(result):
     dur = float(t[-1] - t[0])
     if dur <= 0:
         return None
-    tt = np.array([0.0, dur])
+    series, note = None, ""
+    values = getattr(result, "values", None)
+    if values is not None:
+        try:
+            import gtsam
+            vb = np.array([np.asarray(values.atVector(gtsam.symbol('v', k)), float)
+                           for k in range(len(t))])
+            series = {"gyro": (t - t[0], vb[:, 3:6]), "accel": (t - t[0], vb[:, 6:9])}
+        except Exception:       # values without per-state _Vk keys
+            series = None
+    if series is None:
+        tt = np.array([0.0, dur])
+        series = {name: (tt, np.array([b, np.asarray(b, float) + np.asarray(d, float)], float))
+                  for name, b, d in (("gyro", result.b_g, result.b_g_drift),
+                                     ("accel", result.b_a, result.b_a_drift))}
+        note = ", first-to-last chord"
     import matplotlib.pyplot as plt
     fig, (axg, axa) = plt.subplots(1, 2, figsize=(12, 3))
-    for ax, b, drift, name, unit in (
-            (axg, result.b_g, result.b_g_drift, "gyro", "rad/s"),
-            (axa, result.b_a, result.b_a_drift, "accel", "m/s\u00b2")):
-        b = np.asarray(b, float)
-        drift = np.asarray(drift, float)
+    for ax, name, unit in ((axg, "gyro", "rad/s"), (axa, "accel", "m/s\u00b2")):
+        tt, B = series[name]
+        mean = B.mean(axis=0)       # axes sit far apart: centre each so its drift is visible
         for i, lbl in enumerate("xyz"):
-            ax.plot(tt, [b[i], b[i] + drift[i]], marker=".", label=lbl)
-        ax.set_title(f"{name} bias ({unit})", fontsize=10)
+            ax.plot(tt, B[:, i] - mean[i], marker="." if len(tt) <= 50 else None,
+                    label=f"{lbl} (mean {mean[i]:+.4g})")
+        ax.set_title(f"{name} bias minus axis mean ({unit}{note})", fontsize=10)
         ax.set_xlabel("t (s)")
         ax.legend(fontsize=8, ncol=3)
     fig.tight_layout()
@@ -1094,6 +1116,9 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
         + "</div>")
     facts = [("Trajectory states", f"{d.get('n_states', 0):,}"),
              ("IMU model", getattr(result, "imu_model", "—"))]
+    if d.get("gravity") is not None:      # |g| held fixed: the accel scale absorbs g_true / g_used
+        facts.append(("Gravity", html.escape(describe_gravity(float(d["gravity"]), d.get("gravity_source", "default"),
+                                                             d.get("gravity_site")))))
     if d.get("t_ga") is not None:
         tga_s = d.get("t_ga_sigma")
         facts.append(("t_ga gyro&rarr;accel", f"{d['t_ga'] * 1e3:+.3f}"
@@ -1296,11 +1321,11 @@ def write_cam_imu_report(result, html_path=None, text_path=None, reference=None,
     optional — the report renders fine without them (rig plot still draws)."""
     txt = cam_imu_text_report(result, reference)
     if text_path:
-        with open(text_path, "w") as f:
+        with open(text_path, "w", encoding="utf-8") as f:
             f.write(txt + "\n")
     if html_path:
         views = {}
-        with open(html_path, "w") as f:
+        with open(html_path, "w", encoding="utf-8") as f:
             f.write(cam_imu_html_report(result, reference, board=board,
                                         landmarks=landmarks, config=config,
                                         cam_data=cam_data,

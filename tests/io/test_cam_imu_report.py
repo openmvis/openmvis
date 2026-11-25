@@ -348,3 +348,51 @@ def test_calyx_base_imu_reports_R_wtoI_in_rad():
     html = cam_imu_html_report(r)
     assert "R_wtoI (rad)" in html
     assert " ".join(f"{x:.5f}" for x in want) in html
+
+
+def test_gravity_site_in_html_and_text():
+    from mvis.core.gravity import site_record
+    r = _rich_result()
+    site = site_record({"latitude_deg": -31.42, "longitude_deg": -64.18, "altitude_m": 400,
+                        "name": "Córdoba, Argentina"})
+    r.diagnostics.update(gravity=site["g_site"], gravity_source="site", gravity_site=site)
+    want = "WGS84 normal gravity at Córdoba, Argentina (31.42° S, 64.18° W, 400 m)"
+    assert want in cam_imu_html_report(r)
+    assert want in cam_imu_text_report(r)
+    r.diagnostics.update(gravity=9.81, gravity_source="default", gravity_site=None)
+    assert "MVIS default, no site given" in cam_imu_html_report(r)
+
+
+def test_bias_rows_are_labelled_first_state_not_mean():
+    # b_g / b_a are the first state's bias (result.b_g, aux b_g_s), not a mean
+    html = cam_imu_html_report(_fake_result(aux=True))
+    assert "b_g mean" not in html and "b_a mean" not in html
+    assert "b_g (first state, rad/s)" in html and "b_a (first state, m/s²)" in html
+
+
+def test_bias_evolution_plots_per_state_biases_not_chord():
+    # the solver keeps one random-walk bias per state (_Vk = [v, b_g, b_a]); the plot must show
+    # that series, not a straight line from the first to the last state
+    from mvis.analysis.cam_imu_report import _plot_bias_evolution
+    t = np.array([0.0, 1.0, 2.0])
+    bg = np.array([[0.01, 0.0, 0.0], [0.05, 0.0, 0.0], [0.02, 0.0, 0.0]])   # middle off the chord
+    ba = np.array([[0.1, 0.0, 0.0], [0.3, 0.0, 0.0], [0.2, 0.0, 0.0]])
+    values = gtsam.Values()
+    for k in range(3):
+        values.insert(gtsam.symbol('v', k), np.concatenate([np.zeros(3), bg[k], ba[k]]))
+    r = NS(t_states=t, values=values, b_g=bg[0], b_a=ba[0],
+           b_g_drift=bg[-1] - bg[0], b_a_drift=ba[-1] - ba[0])
+    fig = _plot_bias_evolution(r)
+    axg, axa = fig.axes
+    assert np.allclose(axg.lines[0].get_xdata(), t)
+    # each axis is drawn around its own mean (axes sit far apart; drift would look flat)
+    assert np.allclose(axg.lines[0].get_ydata(), bg[:, 0] - bg[:, 0].mean())
+    assert np.allclose(axa.lines[0].get_ydata(), ba[:, 0] - ba[:, 0].mean())
+    assert axg.lines[0].get_label() == "x (mean +0.02667)"
+    assert "minus axis mean" in axg.get_title() and "chord" not in axg.get_title()
+    # no per-state values: fall back to the first-to-last chord, labelled as such
+    r.values = None
+    fig = _plot_bias_evolution(r)
+    axg, _ = fig.axes
+    assert np.allclose(axg.lines[0].get_ydata(), np.array([bg[0, 0], bg[-1, 0]]) - (bg[0, 0] + bg[-1, 0]) / 2)
+    assert "chord" in axg.get_title()

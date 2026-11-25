@@ -155,3 +155,24 @@ def test_require_sigma_gates_only_the_base_imu():
     assert cam_imu_sensor_rows(r, require_sigma=True)["base"]["intr"] is None
     r = fake_result(5)                       # xi None
     assert cam_imu_sensor_rows(r, require_sigma=False)["base"]["intr"] is None
+
+
+def test_gravity_site_reaches_the_summary():
+    r = fake_result(0)
+    site = {"latitude_deg": 22.54, "longitude_deg": 114.06, "altitude_m": 20, "name": "Shenzhen", "g_site": 9.7879}
+    r.diagnostics.update(gravity=9.7879, gravity_source="site", gravity_site=site)
+    s = {"ok": True, "cams": []}
+    _summary_sensor_fields(r, s)
+    assert (s["gravity_source"], s["gravity_site"]) == ("site", site)
+
+
+def test_failed_init_gate_is_shown_in_summary_not_ok():
+    """Init gates judge the seed only (user 2026-11-24): a failed |g| gate shows
+    in cam_imu.json `init_gates`, while ok stays as solved."""
+    r = fake_result(0)
+    r.diagnostics["seed_report"] = dict(g_norm_ls=10.428, g_norm_ok=False, scale=0.9746, scale_ok=True)
+    summary = {"ok": True, "cams": []}
+    _summary_sensor_fields(r, summary)
+    assert summary["ok"] is True
+    assert summary["init_gates"] == {"g_norm_ls": 10.428, "g_norm_ok": False,
+                                     "scale": 0.9746, "scale_ok": True}

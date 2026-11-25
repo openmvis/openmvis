@@ -182,6 +182,8 @@ def build_cam_imu_dict(result, cam_topics=None, imu_topics=None) -> dict:
             "b_a": [float(x) for x in np.asarray(result.b_a, float)]}
     if imu_topics:
         base["topic"] = imu_topics[0]
+    if result.diagnostics.get("gravity") is not None:   # |g| the solve held fixed
+        base["gravity"] = float(result.diagnostics["gravity"])
     if result.diagnostics.get("t_ga") is not None:   # gyro<->accel time offset
         base["t_ga"] = float(result.diagnostics["t_ga"])
         if result.diagnostics.get("t_ga_sigma") is not None:

@@ -52,6 +52,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from mvis.core.gravity import STANDARD_MVIS
 import numpy as np
 import gtsam
 
@@ -60,7 +61,7 @@ from mvis.calibration.factors.lie_groups import exp_so3, log_so3
 from mvis.imu import ImuModel, RPNG
 from mvis.calibration.factors.aci import ACIPreintegrator
 
-GRAVITY_MAG = 9.81
+GRAVITY_MAG = STANDARD_MVIS   # the default of the init functions; a solve passes its cfg.gravity
 
 
 # ---------------------------------------------------------------------------

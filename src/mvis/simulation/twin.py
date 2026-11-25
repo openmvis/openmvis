@@ -45,6 +45,7 @@ import gtsam
 import numpy as np
 
 from mvis.calibration import pipeline_cam_imu as P
+from mvis.core.gravity import of_result
 from mvis.calibration.factors.imu_segment import ImuSegment
 from mvis.calibration.factors.lie_groups import exp_so3, log_so3
 from mvis.imu import create_imu_model, parse_imu_model
@@ -164,7 +165,7 @@ def dense_trajectory(result, t_imu, w_m, a_m, model):
     ts = np.asarray(result.t_states, float)
     seg = ImuSegment(t_imu, w_m, a_m, model)
     intr = create_imu_model(model).retract(np.asarray(result.imu_intr_xi, float))
-    g = np.array([0.0, 0.0, -P.GRAVITY_MAG])
+    g = np.array([0.0, 0.0, -of_result(result)])
     t_imu = np.asarray(t_imu, float)
 
     def state(k):

@@ -29,7 +29,7 @@ import dataclasses
 import numpy as np
 import gtsam
 
-from mvis.calibration.cam_imu_init import GRAVITY_MAG, initialize_imu_imu
+from mvis.calibration.cam_imu_init import initialize_imu_imu
 from mvis.calibration.factors.camera_calib import CameraCalib
 from mvis.calibration.pipeline_cam_imu import (
     build_joint_graph, board_poses_from_values, _decimate, _assign_brackets,
@@ -66,7 +66,7 @@ def run_multi_board_calibration(cam, board_points_by_id, t_imu, w_m, a_m, *,
     keep_s = _decimate(np.asarray(t_track, float), cfg.state_hz)
     t_states = np.asarray(t_track, float)[keep_s]
     T_init = [T for T, k in zip(T_track, keep_s) if k]
-    g_inW = np.array([0.0, 0.0, -GRAVITY_MAG])
+    g_inW = np.array([0.0, 0.0, -cfg.gravity])
     v_init = _densify_velocities(t_states, T_init, seed, t_imu, w_m, a_m, cfg, g_inW)
 
     # frames -> bracketing states; a frame may see MULTIPLE boards -> one
@@ -130,6 +130,7 @@ def run_multi_board_calibration(cam, board_points_by_id, t_imu, w_m, a_m, *,
     imu_intr_xi = np.asarray(res.atVector(I0), float)
     bg0, ba0 = seed.b_g, seed.b_a
     diagnostics = {
+        'gravity': cfg.gravity, 'gravity_source': cfg.gravity_source, 'gravity_site': cfg.gravity_site,
         'reproj_rms_px': float(rms_post),
         'reproj_rms_px_init': float(rms_pre),
         'n_states': int(len(t_states)), 'n_groups': int(len(board_ids)),

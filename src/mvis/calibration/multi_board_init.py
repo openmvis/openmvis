@@ -93,14 +93,14 @@ def init_multi_board(t_cam, ids_list, uv_list, board_points_by_id, cal_vec,
     pts0 = np.asarray(board_points_by_id[anchor_board], float)
     t_kept, T_CtoB0_kept, _n = pnp_pose_track(t_cam[a_fi], a_loc, a_uv, pts0,
                                               cal_vec, model=model)
-    seed = initialize_cam_imu(t_kept, T_CtoB0_kept, t_imu, w_m, a_m, **init_kwargs)
+    seed = initialize_cam_imu(t_kept, T_CtoB0_kept, t_imu, w_m, a_m, g_mag=cfg.gravity, **init_kwargs)
 
     T_CtoI = seed.T_CtoI
     T_CtoI_inv = T_CtoI.inverse()
     t_key = np.asarray(seed.t_key, float)
     T_ItoW_key = list(seed.T_ItoW)
     v_key = np.asarray(seed.v_inW, float)
-    g_inW = np.array([0.0, 0.0, -9.81])
+    g_inW = np.array([0.0, 0.0, -cfg.gravity])
 
     # --- B. FLIP-ROBUST per-board PnP tracks: pnp_pose_track resolves the planar
     # two-fold flip via multi-frame consistency. pose_of[b][frame] = T_CtoBb. ---

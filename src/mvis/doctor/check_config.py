@@ -34,6 +34,7 @@ import sys
 import time
 
 from mvis.core.config_parser import load_yaml
+from mvis.core.gravity import DEFAULT_HINT
 from mvis.doctor.findings import Finding
 
 TAG_FAMILIES = {"t36h11", "t36h11b1"}
@@ -343,6 +344,10 @@ def check_config(path: str) -> list:
         if raw.get("solve", {}).get("estimate_t_ga") is False or est_imu.get("t_ga") is False:
             out.append(Finding("estimate.t_ga", "estimate", "warn",
                                "t_ga (gyro-accel offset) disabled; MVIS default practice is on"))
+        g, src = cfg.solve.gravity, cfg.solve.gravity_source
+        # a pass, not a warn: every shipped example config uses the default (the run log warns instead)
+        out.append(Finding("solve.gravity", "solve", "pass",
+                           DEFAULT_HINT if src == "default" else f"|g| {g:.4f} m/s^2 ({src})"))
         if not (raw.get("solve") or {}).get("rms_gate_px"):
             out.append(Finding("solve.rms_gate_px", "solve", "warn",
                                "rms_gate_px unset/0: a diverged solve can still report ok=true"))
