@@ -344,10 +344,12 @@ def check_config(path: str) -> list:
         if raw.get("solve", {}).get("estimate_t_ga") is False or est_imu.get("t_ga") is False:
             out.append(Finding("estimate.t_ga", "estimate", "warn",
                                "t_ga (gyro-accel offset) disabled; MVIS default practice is on"))
-        g, src = cfg.solve.gravity, cfg.solve.gravity_source
-        # a pass, not a warn: every shipped example config uses the default (the run log warns instead)
+        g, src, place = cfg.solve.gravity, cfg.solve.gravity_source, cfg.solve.gravity_place
+        # a pass, not a warn: the default is legal and the run log warns about it (the published
+        # cam-IMU example configs set gravity: since 2026-11-25)
         out.append(Finding("solve.gravity", "solve", "pass",
-                           DEFAULT_HINT if src == "default" else f"|g| {g:.4f} m/s^2 ({src})"))
+                           DEFAULT_HINT if src == "default" else
+                           f"|g| {g:.4f} m/s^2 ({src}{', ' + place if place else ''})"))
         if not (raw.get("solve") or {}).get("rms_gate_px"):
             out.append(Finding("solve.rms_gate_px", "solve", "warn",
                                "rms_gate_px unset/0: a diverged solve can still report ok=true"))

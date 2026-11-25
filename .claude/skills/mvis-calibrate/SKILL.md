@@ -192,6 +192,8 @@ Objective: turn the spec into validated configs.
   (`cam0` ± 1.57 → ± 2.53 mm), which is why the published regression rows use
   80 s with 4 Hz and two corners, a mix of the two. Record the choice in
   `rationale.md`.
+- **Cam-IMU: ask the user where the data was recorded** and set the local value,
+  e.g. `gravity: 9.8013   # m/s², Newark, Delaware` (see `doc/local_gravity.md`).
 - Start from [templates/cam.yaml](templates/cam.yaml) and
   [templates/cam_imu.yaml](templates/cam_imu.yaml); write
   `04_configs/cam.yaml`, `04_configs/cam_imu.yaml` and `04_configs/rationale.md`

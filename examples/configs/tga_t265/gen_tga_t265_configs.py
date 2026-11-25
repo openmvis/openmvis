@@ -43,6 +43,7 @@ T_3CAMS = r'''# t265-only cam-IMU calibration with gyro<->accel time offset.
 # interpolates accel onto gyro stamps — exactly the internal gyro/accel offset
 # t_ga is meant to expose (fe2 stamps were measured +2.8 ms late vs fe1).
 # Run: mvis cam-imu -c <this>
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1
@@ -93,6 +94,7 @@ T_4CAMS = r'''# t265-only cam-IMU calibration with gyro<->accel time offset.
 # interpolates accel onto gyro stamps — exactly the internal gyro/accel offset
 # t_ga is meant to expose (fe2 stamps were measured +2.8 ms late vs fe1).
 # Run: mvis cam-imu -c <this>
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1
@@ -141,6 +143,7 @@ T_5IMUS = r'''# t265-unit-{u} cam-IMU calibration with gyro<->accel time offset.
 # Rig: vi_sensor_rigs_5imus — this rig carries TWO t265 units (t265_01, t265_03),
 # each with its own fisheye stereo + BMI055 IMU. Calibrated per unit: this config
 # uses the t265_{u} stereo pair + /t265_{u}/imu as base. Studies per-unit t_ga.
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1

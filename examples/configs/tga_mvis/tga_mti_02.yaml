@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # t_ga measurement: mvis april bag 01, base IMU = mti — 3 cameras (all global) + ALL
 # 4 IMUs. Prior intrinsics from the camera-only stage (cam_only_april_02.yaml).
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1

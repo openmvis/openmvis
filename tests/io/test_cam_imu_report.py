@@ -363,6 +363,16 @@ def test_gravity_site_in_html_and_text():
     assert "MVIS default, no site given" in cam_imu_html_report(r)
 
 
+def test_gravity_place_in_html_and_text():
+    r = _rich_result()
+    r.diagnostics.update(gravity=9.8013, gravity_source="config", gravity_site=None, gravity_place="Newark, Delaware")
+    want = "9.8013 m/s² — set in config for Newark, Delaware; vs 9.81: -0.09 %"
+    assert want in cam_imu_html_report(r)
+    assert want in cam_imu_text_report(r)
+    r.diagnostics.pop("gravity_place")                       # results made before the place existed
+    assert "9.8013 m/s² — set in config; vs 9.81: -0.09 %" in cam_imu_html_report(r)
+
+
 def test_bias_rows_are_labelled_first_state_not_mean():
     # b_g / b_a are the first state's bias (result.b_g, aux b_g_s), not a mean
     html = cam_imu_html_report(_fake_result(aux=True))

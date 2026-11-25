@@ -46,6 +46,9 @@ both steps from the same place.
 
 ## Results (imu1, 45 s window)
 
+Solved at 9.81 before 2026-11-25. With the config's `gravity: 9.8077` the accel scale moves by
+about −0.02 %.
+
 | model | mode | reproj | cam0 lever (mm) | baseline | td |
 |---|---|---|---|---|---|
 | omni_radtan | stereo, pinned | 0.273 px | [45.0, −68.7, −43.2] | 100.8 mm | −0.73 ms |

@@ -166,6 +166,18 @@ def test_gravity_site_reaches_the_summary():
     assert (s["gravity_source"], s["gravity_site"]) == ("site", site)
 
 
+def test_gravity_place_reaches_the_summary():
+    r = fake_result(0)
+    r.diagnostics.update(gravity=9.8013, gravity_source="config", gravity_site=None, gravity_place="Newark, Delaware")
+    s = {"ok": True, "cams": []}
+    _summary_sensor_fields(r, s)
+    assert s["gravity_place"] == "Newark, Delaware" and "gravity_site" not in s
+    r.diagnostics.pop("gravity_place")                       # results made before the place existed
+    s = {"ok": True, "cams": []}
+    _summary_sensor_fields(r, s)
+    assert "gravity_place" not in s
+
+
 def test_failed_init_gate_is_shown_in_summary_not_ok():
     """Init gates judge the seed only (user 2026-11-24): a failed |g| gate shows
     in cam_imu.json `init_gates`, while ok stays as solved."""

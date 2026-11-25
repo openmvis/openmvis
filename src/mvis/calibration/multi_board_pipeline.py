@@ -131,6 +131,7 @@ def run_multi_board_calibration(cam, board_points_by_id, t_imu, w_m, a_m, *,
     bg0, ba0 = seed.b_g, seed.b_a
     diagnostics = {
         'gravity': cfg.gravity, 'gravity_source': cfg.gravity_source, 'gravity_site': cfg.gravity_site,
+        'gravity_place': cfg.gravity_place,
         'reproj_rms_px': float(rms_post),
         'reproj_rms_px_init': float(rms_pre),
         'n_states': int(len(t_states)), 'n_groups': int(len(board_ids)),

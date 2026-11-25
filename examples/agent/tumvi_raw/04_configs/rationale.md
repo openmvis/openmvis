@@ -7,3 +7,5 @@
   8 Hz; t_ga on (MVIS default); IMU noise from TUM's published BMI160 values
   instead of MVIS generic defaults; Calyx Dw/Da IMU intrinsics.
 - Reference block: TUM's published Kalibr T_cam_imu and stereo baseline.
+- Gravity: `gravity: 9.8077` (TUM Garching), added 2026-11-25. The `07_release` results were solved
+  before this line, at 9.81.

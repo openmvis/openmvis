@@ -15,6 +15,7 @@
 #   ${MVIS_DATASETS}/tum_vi_calib/omni-radtan-1024/results-imucam-imucalib.txt
 #     cam0 lever [46.2, -70.9, -43.7] mm, baseline 100.94 mm, td ~0, reproj ~0.11 px
 
+gravity: 9.8077   # m/s², TUM Garching, Germany
 mode: cam-imu
 input:
   format: ros1

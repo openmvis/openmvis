@@ -12,17 +12,25 @@ records `gravity_source: default`. Near the equator that reads the accelerometer
 
 ## Setting it
 
-Give where the data was recorded: latitude and, for high cities, altitude. MVIS turns them
-into WGS84 normal gravity, within about 0.05 % of a measured value. Or give a measured value:
+Put the local value in the config, with the place as a comment:
 
 ```yaml
-site: {latitude_deg: 22.54, altitude_m: 20, name: Shenzhen}   # name is only a label
-
-# or
-gravity: 9.7879            # m/s^2; `solve.gravity:` is the same key
+gravity: 9.8013   # m/s², Newark, Delaware
 ```
 
-- Latitude and altitude, not a city name: city names repeat (Córdoba, Spain and Córdoba,
+Take the value from the table below, or from the calculator on
+[openmvis.com/reference/local-gravity/](https://openmvis.com/reference/local-gravity/).
+`solve.gravity:` is the same key. Or give where the data was recorded as
+`site: {latitude_deg: 39.68, altitude_m: 40, name: "Newark, Delaware"}`: MVIS turns latitude and
+altitude into WGS84 normal gravity, within about 0.05 % of a measured value. You can give both;
+they must agree (see below).
+
+The report names the place (MVIS 0.4.1 and later). With `gravity:`, it takes the comment after
+the value, without a leading unit, up to the first `;`: `# m/s², Newark, Delaware` gives
+"Newark, Delaware", and `# m/s², Wuhan, China; local 9.7936` gives "Wuhan, China". With
+`site:`, it uses the site name and coordinates instead.
+
+- For `site:`, latitude and altitude, not a city name: city names repeat (Córdoba, Spain and Córdoba,
   Argentina), and a site outside any city still has coordinates from a phone or a map.
 - Precision: anywhere in the right city is enough. One degree of latitude moves g by at most
   0.01 %; 100 m of altitude by 0.003 %. `altitude_m` can be left out (0) below a few hundred
@@ -32,13 +40,16 @@ gravity: 9.7879            # m/s^2; `solve.gravity:` is the same key
 - Neither given: 9.81, so configs written before this key give the same results as before.
 - `longitude_deg` and `name` are labels: g ignores them. The cam-IMU report (HTML and text) prints
   the gravity used and where it came from, e.g. `9.7879 m/s² — WGS84 normal gravity at Shenzhen, China
-  (22.54° N, 114.06° E, 20 m); vs 9.81: -0.23 %`. To name the site while keeping 9.81 (a site under
-  0.1 % from it), give both: `gravity: 9.81` plus `site:`.
+  (22.54° N, 114.06° E, 20 m); vs 9.81: -0.23 %`, or `9.8013 m/s² — set in config for Newark,
+  Delaware; vs 9.81: -0.09 %` from the comment.
+- Older published runs give `gravity: 9.81` plus `site:`: the site names the place and the runs
+  keep reproducing at 9.81.
 
 ## Common recording places
 
-City centres; copy a line into `site:`. The last column is how far the accelerometer scale
-reads off if the run keeps the 9.81 default.
+City centres. Copy the g column into `gravity:` with the city as a comment, or the latitude
+and altitude into `site:`. The last column is how far the accelerometer scale reads off if the
+run keeps the 9.81 default.
 
 | Place | latitude_deg | altitude_m | g [m/s²] | Accel-scale bias at 9.81 |
 |---|---|---|---|---|
@@ -64,6 +75,7 @@ reads off if the run keeps the 9.81 default.
 | Beijing | 39.90 | 45 | 9.8015 | +0.09 % |
 | Boston | 42.36 | 10 | 9.8038 | +0.06 % |
 | Zurich | 47.37 | 410 | 9.8071 | +0.03 % |
+| Dübendorf (UZH-FPV) | 47.40 | 440 | 9.8070 | +0.03 % |
 | Seattle | 47.61 | 50 | 9.8084 | +0.02 % |
 | Munich | 48.14 | 520 | 9.8074 | +0.03 % |
 | Paris | 48.86 | 35 | 9.8096 | +0.00 % |
@@ -75,9 +87,9 @@ Southern latitudes are negative. Any other place: `python -c "from mvis.core.gra
 ## Where it is recorded
 
 The value used, and where it came from (`default`, `config` or `site`), is in
-`cam_imu.json` (`gravity_mps2`, `gravity_source`), the calibration YAML (`imus[0].gravity`),
+`cam_imu.json` (`gravity_mps2`, `gravity_source`, and `gravity_site` or `gravity_place`), the calibration YAML (`imus[0].gravity`),
 the HTML report, the run database's world frame, and any digital twin captured from the run.
-`mvis doctor` names it. With the default, the run log warns and says how to set it.
+`mvis check` names it, with the place. With the default, the run log warns and says how to set it.
 
 ## Why not estimate it
 

@@ -1840,6 +1840,7 @@ def _run_cam_imu_calibration_multi_once(cams, board_points, t_imu, w_m, a_m, *,
     cam_cost = float(np.sum(corner_px ** 2)) / cfg.sigma_px ** 2 * 0.5
     diagnostics = {
         'gravity': cfg.gravity, 'gravity_source': cfg.gravity_source, 'gravity_site': cfg.gravity_site,
+        'gravity_place': cfg.gravity_place,
         'iterations': opt.iterations(),
         'tga_relinearizations': list(getattr(opt, 'relinearizations', [])),
         'err_init': err_init, 'err_final': err_final,
@@ -2227,6 +2228,7 @@ def run_cam_imu_calibration_feature_multi(cams, t_imu, w_m, a_m, *,
 
     diagnostics = {
         'gravity': cfg.gravity, 'gravity_source': cfg.gravity_source, 'gravity_site': cfg.gravity_site,
+        'gravity_place': cfg.gravity_place,
         'structure': 'feature', 'sfm_mode': sfm_mode, 'iterations': n_iters,
         **reproj_entry(corner_px, cfg.sigma_px),
         'reproj_frame_cam': fcam, 'reproj_per_frame': rms, 'n_states': len(t_states),
@@ -2292,7 +2294,8 @@ def format_report(r: CamImuCalibResult) -> str:
         f"T_CtoI trans (m): {np.array2string(p, precision=4)} "
         f"(sigma {np.array2string(sig[3:6], precision=4)})",
         "-- imu --",
-        *([f"gravity: {describe_gravity(d['gravity'], d.get('gravity_source', 'default'), d.get('gravity_site'))}"]
+        *(["gravity: " + describe_gravity(d['gravity'], d.get('gravity_source', 'default'), d.get('gravity_site'),
+                                          d.get('gravity_place'))]
           if d.get("gravity") is not None else []),
         f"b_g: {np.array2string(r.b_g, precision=5)}  "
         f"drift {np.array2string(r.b_g_drift, precision=5)}",

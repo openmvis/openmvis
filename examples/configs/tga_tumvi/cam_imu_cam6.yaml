@@ -3,6 +3,7 @@
 # Cam-IMU regression: TUM-VI raw (dataset-calib-cam1) — stereo + imu0 (single IMU).
 # Prior intrinsics from the camera-only stage (the existing tum_vi_raw/cam1.yaml
 # cam-only config -> committed *_calib.yaml).
+gravity: 9.8077   # m/s², TUM Garching, Germany
 mode: cam-imu
 input:
   format: ros1

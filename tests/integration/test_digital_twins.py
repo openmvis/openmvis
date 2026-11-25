@@ -133,8 +133,8 @@ def test_local_gravity_removes_the_accel_scale_bias():
 
 
 def test_local_gravity_reaches_the_outputs():
-    """A solve with `gravity` set records it in the results dict, the calib dict, the mvisdb world frame and a
-    twin captured from it."""
+    """A solve with `gravity` set records it (and the place from the config comment) in the results dict,
+    the calib dict, the mvisdb world frame and a twin captured from it."""
     from mvis.calibration import pipeline_cam_imu as P
     from mvis.io.cam_imu_output import build_cam_imu_dict
     from mvis.mvisdb.estimates import estimates_from_cam_imu_result
@@ -144,8 +144,10 @@ def test_local_gravity_reaches_the_outputs():
     tw = _twin(GS)
     cams, t, w, a = simulate(tw, seed=0, noise=False)
     res = P.run_cam_imu_calibration_multi(cams, tw.board_points, t, w, a,
-                                          config=config_for(tw, vision_pose="imu", gravity=g, gravity_source="site"))
-    assert (res.diagnostics["gravity"], res.diagnostics["gravity_source"]) == (g, "site")
+                                          config=config_for(tw, vision_pose="imu", gravity=g, gravity_source="config",
+                                                     gravity_place="Shenzhen, China"))
+    d = res.diagnostics
+    assert (d["gravity"], d["gravity_source"], d["gravity_place"]) == (g, "config", "Shenzhen, China")
     assert build_cam_imu_dict(res)["imus"][0]["gravity"] == g
     assert estimates_from_cam_imu_result(res).world_frame.g_magnitude == g
     assert from_result.capture_gt(res).g_inW == [0.0, 0.0, -g]

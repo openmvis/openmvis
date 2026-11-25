@@ -31,8 +31,9 @@ STANDARD_MVIS = 9.81          # what every solve used before `gravity` / `site` 
 G_RANGE = (9.70, 9.90)        # anything outside is a unit or typing mistake
 AGREE_TOL = 0.01              # m/s^2: `gravity` and `site` both given must agree this well
 DEFAULT_HINT = ("no `gravity:` or `site:` in the config, so |g| = 9.81 m/s^2; the accel scale absorbs "
-                "g_local / 9.81 (about -0.23 % to +0.3 % by latitude and altitude). Set `site: {latitude_deg, altitude_m}` "
-                "or `gravity:` (doc/local_gravity.md lists common places)")
+                "g_local / 9.81 (about -0.23 % to +0.3 % by latitude and altitude). Set the local value, e.g. "
+                "`gravity: 9.8013   # m/s², Newark, Delaware`, or `site: {latitude_deg, altitude_m}` "
+                "(doc/local_gravity.md lists common places)")
 
 
 def normal_gravity(latitude_deg: float, altitude_m: float = 0.0) -> float:
@@ -91,8 +92,9 @@ def _place(site: dict) -> str:
     return f"{site.get('name') or 'site'} ({', '.join(parts)})"
 
 
-def describe(g: float, source: str, site: dict | None = None) -> str:
-    """One line on the |g| a solve held and where it came from, for the reports."""
+def describe(g: float, source: str, site: dict | None = None, place: str | None = None) -> str:
+    """One line on the |g| a solve held and where it came from, for the reports. `place`, from the
+    comment after the config's `gravity:` value, names a config value that has no site."""
     vs = f"vs {STANDARD_MVIS}: {(g / STANDARD_MVIS - 1) * 100:+.2f} %"
     if source == "site":           # results made before gravity_site existed have no site record
         return f"{g:.4f} m/s² — WGS84 normal gravity at {_place(site) if site else 'the config site'}; {vs}"
@@ -101,5 +103,5 @@ def describe(g: float, source: str, site: dict | None = None) -> str:
         return (f"{g:.4f} m/s² — set in config; {_place(site)} gives {gs:.4f} "
                 f"({(gs / STANDARD_MVIS - 1) * 100:+.2f} % vs {STANDARD_MVIS})")
     if source == "config":
-        return f"{g:.4f} m/s² — set in config; {vs}"
+        return f"{g:.4f} m/s² — set in config{f' for {place}' if place else ''}; {vs}"
     return f"{g:.4f} m/s² — MVIS default, no site given"

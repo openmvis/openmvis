@@ -141,3 +141,48 @@ def test_describe_names_the_source():
     assert describe(9.7879, "site") == "9.7879 m/s² — WGS84 normal gravity at the config site; vs 9.81: -0.23 %"
     assert describe(9.7931, "site", {"latitude_deg": -31.42}) == ("9.7931 m/s² — WGS84 normal gravity at "
                                                                   "site (31.42° S); vs 9.81: -0.17 %")
+
+
+@pytest.mark.parametrize("extra, place", [
+    ("gravity: 9.8013   # m/s², Newark, Delaware\n", "Newark, Delaware"),
+    ("gravity: 9.8013   # m/s^2, Newark, Delaware\n", "Newark, Delaware"),
+    ("gravity: 9.8013 #m/s2,Newark, Delaware  \n", "Newark, Delaware"),
+    ("gravity: 9.8013   # Newark, Delaware\n", "Newark, Delaware"),
+    ("gravity: 9.8013   # m/s²\n", None),                        # unit only: no place
+    ("gravity: 9.8013   #\n", None),
+    ("gravity: 9.81   # m/s², Wuhan, China; local 9.7936, solved at 9.81\n", "Wuhan, China"),  # ends at ';'
+    ("gravity: 9.8013   # m/s², Newark, DE (Univ. of Delaware); local 9.8013\n",
+     "Newark, DE (Univ. of Delaware)"),                          # brackets stay
+    ("gravity: 9.8013   # m/s²; local 9.8013\n", None),             # nothing before ';'
+    ("gravity: 9.8013\n", None),                                 # no comment
+    ("solve:\n  max_iterations: 5\n  gravity: 9.8013   # m/s², Newark, Delaware\n", "Newark, Delaware"),
+    ("solve:\n  gravity: 9.8013\nsite_note: 1\n", None),
+    ("solve: {gravity: 9.8013}   # m/s², Newark, Delaware\n", None),   # flow style: not read
+    ("# gravity: 9.81   # m/s², Shenzhen\ngravity: 9.8013   # m/s², Newark, Delaware\n", "Newark, Delaware"),
+    ("gravity: 9.8013\nfoo:\n  gravity: 1   # m/s², Nowhere\n", None),     # not solve's gravity:
+    ("gravity: 9.81   # under 0.1 %: kept\nsite: {latitude_deg: 48.26, altitude_m: 482}\n", None),  # site wins
+])
+def test_config_keeps_the_place_from_the_gravity_comment(tmp_path, extra, place):
+    from mvis.core.config_parser import parse_cam_imu_config
+    c = parse_cam_imu_config(_cfg(tmp_path, extra))
+    assert c.solve.gravity_place == place
+
+
+def test_config_from_a_dict_has_no_place():
+    """No file text, no comment: a config built from a dict names no place."""
+    from mvis.core.config import CamImuRunConfig
+    from mvis.core.config_parser import _parse_dataclass, _resolve_gravity
+    data = {"input": {"format": "euroc", "path": "/x"}, "gravity": 9.8013}
+    c = _parse_dataclass(data, CamImuRunConfig, "cam_imu")
+    _resolve_gravity(c, data)
+    assert (c.solve.gravity, c.solve.gravity_source, c.solve.gravity_place) == (9.8013, "config", None)
+
+
+def test_describe_names_the_place_from_the_comment():
+    from mvis.core.gravity import describe, site_record
+    assert describe(9.8013, "config", None, "Newark, Delaware") == (
+        "9.8013 m/s² — set in config for Newark, Delaware; vs 9.81: -0.09 %")
+    nw = site_record({"latitude_deg": 39.68, "altitude_m": 40, "name": "Newark, DE"})
+    assert describe(9.8013, "config", nw, "Somewhere else").startswith(
+        "9.8013 m/s² — set in config; Newark, DE (39.68° N, 40 m) gives")        # the site wins
+    assert describe(9.81, "default", None, "Newark") == "9.8100 m/s² — MVIS default, no site given"

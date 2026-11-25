@@ -6,3 +6,5 @@
 - Cam-IMU: motion window 80 s, max 40 iterations, `rms_gate_px: 3`, IMU `calyx`
   + `dw_da`, `estimate_t_ga` on (default), all 4 IMUs (base `/imu/data`).
 - IMU noise: MVIS generic defaults (no datasheet supplied) — limitation noted.
+- Gravity: `gravity: 9.8013` (Newark, Delaware), added 2026-11-25. The `07_release` results were solved
+  before this line, at 9.81.

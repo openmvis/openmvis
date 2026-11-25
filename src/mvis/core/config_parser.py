@@ -82,9 +82,46 @@ def _check_board_keys(data: dict, path: str) -> None:
                          "(aruco_dict: DICT_5X5_250, for example)")
 
 
-def _resolve_gravity(cfg, data: dict) -> None:
+_GRAVITY_LINE = re.compile(r"^(?P<indent>[ \t]*)gravity:[^#\n]*\s#(?P<comment>.*)$")
+_UNIT = re.compile(r"^\s*m/s(?:²|\^2|2)\s*,?")
+
+
+def _gravity_comments(text: str) -> tuple[str | None, str | None]:
+    """The comments after a top-level `gravity:` and after a block-style `solve:` child `gravity:`
+    in the raw config text (the YAML loader drops comments)."""
+    top = solve = None
+    in_solve, child_indent = False, None
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line[0].isspace():                   # a top-level key ends any solve: block
+            in_solve, child_indent = bool(re.match(r"solve:\s*(#.*)?$", line)), None
+        elif in_solve and child_indent is None:
+            child_indent = len(line) - len(line.lstrip())
+        m = _GRAVITY_LINE.match(line)
+        if not m:
+            continue
+        indent = len(m["indent"])
+        if indent == 0 and top is None:
+            top = m["comment"]
+        elif in_solve and indent == child_indent and solve is None:
+            solve = m["comment"]
+    return top, solve
+
+
+def gravity_place(comment: str | None) -> str | None:
+    """The place a `gravity:` comment names: `# m/s², Newark, Delaware` -> "Newark, Delaware".
+    The place ends at the first ';' (`# m/s², Wuhan, China; local 9.7936` -> "Wuhan, China");
+    a unit-only or empty comment names none."""
+    if comment is None:
+        return None
+    return _UNIT.sub("", comment.split(";", 1)[0], count=1).strip() or None
+
+
+def _resolve_gravity(cfg, data: dict, text: str | None = None) -> None:
     """Resolve the run config's `gravity` / `site` (or `solve.gravity`, the same key) into
-    cfg.solve.gravity and cfg.solve.gravity_source (mvis.core.gravity)."""
+    cfg.solve.gravity and cfg.solve.gravity_source (mvis.core.gravity). `text`, the raw config,
+    gives the place named in the comment after the `gravity:` value; without it, no place."""
     from mvis.core.gravity import resolve, site_record
     solve_g = (data.get("solve") or {}).get("gravity")
     if solve_g is not None and cfg.gravity is not None and float(solve_g) != float(cfg.gravity):
@@ -92,6 +129,9 @@ def _resolve_gravity(cfg, data: dict) -> None:
     g = cfg.gravity if cfg.gravity is not None else solve_g
     cfg.solve.gravity, cfg.solve.gravity_source = resolve(g, cfg.site or None)
     cfg.solve.gravity_site = site_record(cfg.site)
+    # with a site, the site names the place (regression comments such as "under 0.1 % ..." are no place)
+    top, solve = _gravity_comments(text) if text and g is not None and not cfg.site else (None, None)
+    cfg.solve.gravity_place = gravity_place(top) or gravity_place(solve)
 
 
 def _all_corners_for_charuco(board, holder, explicit: bool) -> None:
@@ -430,13 +470,14 @@ def parse_cam_imu_config(path: str):
     """
     from mvis.core.config import CamImuRunConfig
     data = load_yaml(path)
+    text = Path(path).read_text(encoding="utf-8", errors="replace")  # for the place in the `gravity:` comment
     # `mode:` is the `mvis run` dispatch key, already consumed by the caller
     data = {k: v for k, v in data.items() if k != "mode"} if isinstance(data, dict) else data
     cfg = _parse_dataclass(data, CamImuRunConfig, "cam_imu")
     if isinstance(data, dict) and "estimate" in data:
         _apply_estimate_cam_imu(cfg, data)
     _all_corners_for_charuco(cfg.board, cfg.solve, True)
-    _resolve_gravity(cfg, data if isinstance(data, dict) else {})
+    _resolve_gravity(cfg, data if isinstance(data, dict) else {}, text)
     return cfg
 
 

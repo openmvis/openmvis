@@ -4,6 +4,7 @@
 # IMU noise from the authors' Kalibr imu.yaml (gyro 2.14e-3, gyro walk 1.72e-5, acc 2.50e-2, acc walk 3.83e-4).
 # Prereq: mvis cam -c examples/configs/whuvid_zed2/cam_only_radtan.yaml
 # Run:    mvis cam-imu -c examples/configs/whuvid_zed2/cam_imu_stereo_rs.yaml
+gravity: 9.7936   # m/s², Wuhan, China
 mode: cam-imu
 input:
   format: ros1

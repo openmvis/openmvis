@@ -11,6 +11,7 @@
 #
 # Reference (Kalibr): ${MVIS_DATASETS}/tum_vi_calib/pinhole-equi-1024/
 
+gravity: 9.8077   # m/s², TUM Garching, Germany
 mode: cam-imu
 input:
   format: ros1

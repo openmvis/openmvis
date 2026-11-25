@@ -735,6 +735,8 @@ def _summary_sensor_fields(r, summary: dict) -> None:
         summary["gravity_source"] = d.get("gravity_source", "default")
         if d.get("gravity_site"):
             summary["gravity_site"] = d["gravity_site"]
+        if d.get("gravity_place"):
+            summary["gravity_place"] = d["gravity_place"]
     sr = d.get("seed_report") or {}
     if "g_norm_ok" in sr:   # init checks judge the seed only; ok does not use them
         summary["init_gates"] = {"g_norm_ls": round(float(sr["g_norm_ls"]), 4),

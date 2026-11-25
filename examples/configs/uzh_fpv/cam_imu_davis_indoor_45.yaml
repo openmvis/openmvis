@@ -13,6 +13,7 @@
 # Reference (Kalibr, shipped zip):
 #   ${MVIS_DATASETS}/UZH/indoor_45_calib_davis/indoor_45_calib_davis/camchain-imucam-..indoor_45_calib_davis_imu.yaml
 
+gravity: 9.8070   # m/s², Dübendorf, Switzerland
 mode: cam-imu
 input:
   format: ros1

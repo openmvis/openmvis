@@ -10,6 +10,8 @@
 #
 # Run with:  mvis cam-imu -c examples/configs/example_estimate.yaml
 
+# Put your recording place's g here (doc/local_gravity.md); this one is Newark, Delaware.
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: euroc

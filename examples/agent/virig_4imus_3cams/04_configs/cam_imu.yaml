@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
 # SPDX-License-Identifier: GPL-3.0-only
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1

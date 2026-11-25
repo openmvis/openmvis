@@ -9,6 +9,12 @@ cards, grade badges, dark-mode + print CSS) and adds **interactive 3D plots**.
 1. **Summary** — status, reprojection RMS, camera/IMU counts, trajectory states,
    LM iterations, with quality grade badges (reproj good ≤1.0 px / marginal ≤2.0;
    χ²/dof good ≤1.5 / marginal ≤3.0).
+   The **Gravity** row gives the |g| the solve held and where it came from
+   ([local_gravity.md](local_gravity.md)): with `site:`, the site name and its
+   coordinates; with `gravity:` alone, "set in config" plus the place from the
+   comment after the value up to the first `;`, e.g. "set in config for Newark,
+   Delaware" (no comment: "set in config"); with both, "set in config" plus what
+   the site gives (the site wins over the comment); with neither, "MVIS default".
 2. **3D Geometry** — two rotatable/zoomable plotly figures:
    - *Sensor rig* — body-frame extrinsics: base IMU triad at the origin, each
      camera as a frustum at its `T_C→I`, each aux IMU as a triad at its `T_IstoI`,

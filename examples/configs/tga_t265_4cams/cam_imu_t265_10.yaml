@@ -6,6 +6,7 @@
 # interpolates accel onto gyro stamps — exactly the internal gyro/accel offset
 # t_ga is meant to expose (fe2 stamps were measured +2.8 ms late vs fe1).
 # Run: mvis cam-imu -c <this>
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1

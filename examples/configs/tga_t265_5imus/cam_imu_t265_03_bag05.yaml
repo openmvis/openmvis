@@ -4,6 +4,7 @@
 # Rig: vi_sensor_rigs_5imus — this rig carries TWO t265 units (t265_01, t265_03),
 # each with its own fisheye stereo + BMI055 IMU. Calibrated per unit: this config
 # uses the t265_03 stereo pair + /t265_03/imu as base. Studies per-unit t_ga.
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1

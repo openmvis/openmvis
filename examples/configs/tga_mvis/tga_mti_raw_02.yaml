@@ -4,6 +4,7 @@
 # 5 IMUs. Prior intrinsics come from per-camera cam-only (vi_5imus_4cams_calib.yaml;
 # the two T265 rigs don't co-observe the board, so cameras are linked via the IMU
 # trajectory, not co-visibility). Run: mvis cam-imu -c <this>
+gravity: 9.8013   # m/s², Newark, Delaware
 mode: cam-imu
 input:
   format: ros1

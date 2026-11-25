@@ -60,7 +60,8 @@ def _filled(template, tmp_path):
     """Write the template with its `<...>` placeholders replaced so it parses; numbers where
     the schema wants numbers."""
     text = re.sub(r"<[^>\n]+>", "x", template.read_text())
-    for key, value in (("rows", "6"), ("cols", "6"), ("tag_size", "0.088"), ("tag_spacing", "0.3")):
+    for key, value in (("rows", "6"), ("cols", "6"), ("tag_size", "0.088"), ("tag_spacing", "0.3"),
+                       ("gravity", "9.8013")):
         text = re.sub(rf"^(\s*{key}:) x", rf"\1 {value}", text, flags=re.M)
     path = tmp_path / template.name
     path.write_text(text)

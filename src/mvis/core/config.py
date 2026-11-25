@@ -644,6 +644,7 @@ class CamImuCalibConfig:
     gravity: float = 9.81
     gravity_source: str = "default"
     gravity_site: dict | None = None     # the config `site` + its g_site, for the report (mvis.core.gravity.site_record)
+    gravity_place: str | None = None     # the place the comment after `gravity:` names (config_parser.gravity_place)
     # priors on the first state (gauge handles pose)
     sigma_v0: float = 0.5
     sigma_bg0: float = 0.01

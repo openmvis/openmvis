@@ -68,7 +68,9 @@ Presets for a new dataset (Stage 4): **Full** (80 s window, non-base cameras
 at 10 Hz, all corners) for the release calibration; **Fast** (60 s, 4 Hz, two
 corners per tag) for a first pass at about a third of the solve time. The 60 s
 window alone loosened the VI-Rig camera levers from ± 1.57 to ± 2.53 mm, which
-is why the published rows use 80 s with 4 Hz and two corners.
+is why the published rows use 80 s with 4 Hz and two corners. The agent also asks
+where the data was recorded and sets the local gravity in the cam-IMU config
+([local_gravity.md](local_gravity.md)).
 
 ## Worked examples
 

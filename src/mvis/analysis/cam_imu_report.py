@@ -422,7 +422,7 @@ def cam_imu_text_report(result, reference=None) -> str:
          f"imu {d.get('imu_chi2_dof', float('nan')):.2f}"]
     if d.get("gravity") is not None:
         L.append("gravity: " + describe_gravity(float(d["gravity"]), d.get("gravity_source", "default"),
-                                                d.get("gravity_site")))
+                                                d.get("gravity_site"), d.get("gravity_place")))
     for r in rows:
         L += ["", f"cam{r['id']}  ({r['model']})",
               _text_reproj_line(r),
@@ -1118,7 +1118,7 @@ def cam_imu_html_report(result, reference=None, title="Camera-IMU Calibration",
              ("IMU model", getattr(result, "imu_model", "—"))]
     if d.get("gravity") is not None:      # |g| held fixed: the accel scale absorbs g_true / g_used
         facts.append(("Gravity", html.escape(describe_gravity(float(d["gravity"]), d.get("gravity_source", "default"),
-                                                             d.get("gravity_site")))))
+                                                             d.get("gravity_site"), d.get("gravity_place")))))
     if d.get("t_ga") is not None:
         tga_s = d.get("t_ga_sigma")
         facts.append(("t_ga gyro&rarr;accel", f"{d['t_ga'] * 1e3:+.3f}"

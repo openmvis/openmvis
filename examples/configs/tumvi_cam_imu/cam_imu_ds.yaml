@@ -5,6 +5,7 @@
 # then this. Recovers T_CtoI / td; the lever/td agree with the omni/equi runs.
 #   mvis run -c examples/configs/tumvi_cam_imu/mvis_cam0_ds.yaml
 #   mvis cam-imu  -c examples/configs/tumvi_cam_imu/cam_imu_ds.yaml
+gravity: 9.8077   # m/s², TUM Garching, Germany
 mode: cam-imu
 input:
   format: ros1

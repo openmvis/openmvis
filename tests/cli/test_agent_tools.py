@@ -191,7 +191,8 @@ def test_skill_templates_have_no_unknown_keys(tmp_path, name):
     numeric = {"rows", "cols", "tag_size", "tag_spacing"}
     src = re.sub(r"^(\s*-?\s*(\w+)):\s*<[^>\n]*>", lambda m: f"{m.group(1)}: "
                  + ("6" if m.group(2) in ("rows", "cols") else
-                    "0.1" if m.group(2) in numeric else "x"), src, flags=re.M)
+                    "0.1" if m.group(2) in numeric else
+                    "9.8013" if m.group(2) == "gravity" else "x"), src, flags=re.M)
     src = re.sub(r"\[<[^\]]*\]", "[/a]", src)
     p = tmp_path / name
     p.write_text(src)

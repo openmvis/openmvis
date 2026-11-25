@@ -5,6 +5,29 @@ All notable changes to MVIS are recorded here. Versions follow
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-11-25
+
+Changes since 0.4.0. The same config gives the same solve as on 0.4.0; the example configs now set the
+local `gravity:`, and the report names the place given in its comment.
+
+### Added
+
+- The cam-IMU report names the place from the comment after `gravity:`: `gravity: 9.8013   # m/s², Newark,
+  Delaware` gives "9.8013 m/s² — set in config for Newark, Delaware; vs 9.81: -0.09 %" (HTML, text, and
+  `cam_imu.json` `gravity_place`; `mvis check` shows it too). A leading unit is dropped and the place ends at
+  the first `;`. With `site:` the site name is used, as before.
+
+### Changed
+
+- Configs people copy now set the local gravity first: `gravity: 9.8013   # m/s², Newark, Delaware`.
+  `doc/local_gravity.md` leads with `gravity:` and explains `site:` in the text; the run-log hint, the
+  mvis-calibrate cam-IMU template and `examples/configs/example_estimate.yaml` do the same, and the agent
+  asks where the data was recorded.
+- The published cam-IMU example configs set `gravity:` at the local value (VI-Rig and T265: Newark 9.8013;
+  TUM-VI: Garching 9.8077; UZH-FPV: Dübendorf 9.8070; WHUVID ZED2: Wuhan 9.7936), as do the two agent
+  examples. Results published from these configs before this change were solved at 9.81: their
+  accelerometer scale differs by 0.02-0.17 % from a re-solve. Regression configs are unchanged.
+
 ## [0.4.0] — 2026-11-24
 
 Changes since 0.3.0. A config that ran on 0.3.0 runs unchanged: without `gravity:` or `site:`
