@@ -24,6 +24,9 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.24522452
     description: "Version DOI for v0.4.0 (Zenodo)"
+  - type: doi
+    value: 10.5281/zenodo.24541924
+    description: "Version DOI for v0.4.1 (Zenodo)"
 license: GPL-3.0-only
 url: "https://openmvis.com"
 repository-code: "https://github.com/openmvis/openmvis"

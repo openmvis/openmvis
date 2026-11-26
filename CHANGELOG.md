@@ -5,6 +5,16 @@ All notable changes to MVIS are recorded here. Versions follow
 
 ## [Unreleased]
 
+### Changed
+
+- Dataset licence: every recording hosted in `calibench-vi/datasets` (the VI-Rig captures,
+  the partner sets, and the converted sets as before) is CC BY 4.0, commercial use
+  included, since 2026-11-25. Access stays gated. This replaces CC BY-NC 4.0 with commercial use on request
+  for the VI-Rig (since 2026-09-11) and partner (since 2026-11-03) recordings. The catalog,
+  `COMMERCIAL-LICENSE.md`, the agent docs and the generated dataset cards say so, and the simulator examples
+  `virig_4imus_3cams` and `elp_t265` are CC BY 4.0. `calibench-vi/community` folders, third-party recipe
+  datasets and the code licence (GPL-3.0-only plus a commercial licence) are unchanged.
+
 ## [0.4.1] — 2026-11-25
 
 Changes since 0.4.0. The same config gives the same solve as on 0.4.0; the example configs now set the

@@ -16,8 +16,8 @@
    "notes": "AprilGrid 6x6; hosted on calibench-vi/datasets.",
    "attribution": {
     "creator": "Yulin Yang (OpenMVIS)",
-    "license": "CC BY-NC 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "source_url": "https://huggingface.co/datasets/calibench-vi/datasets",
     "citation": "Y. Yang, P. Geneva, G. Huang, \"Multi-visual-inertial system: Analysis, calibration, and estimation\", IJRR 2024",
     "doi": "10.1177/02783649241245726"
@@ -118,8 +118,8 @@
    "notes": "ArUco tags as geometry-free features; cam-IMU feature mode only.",
    "attribution": {
     "creator": "Yulin Yang (OpenMVIS)",
-    "license": "CC BY-NC 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "source_url": "https://huggingface.co/datasets/calibench-vi/datasets",
     "citation": "Y. Yang, P. Geneva, G. Huang, \"Multi-visual-inertial system: Analysis, calibration, and estimation\", IJRR 2024",
     "doi": "10.1177/02783649241245726"
@@ -277,8 +277,8 @@
    "notes": "ELP rolling-shutter stereo + T265; 15-bag repeatability set.",
    "attribution": {
     "creator": "Yulin Yang (OpenMVIS)",
-    "license": "CC BY-NC 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "source_url": "https://huggingface.co/datasets/calibench-vi/datasets",
     "citation": "Y. Yang, P. Geneva, G. Huang, \"Multi-visual-inertial system: Analysis, calibration, and estimation\", IJRR 2024",
     "doi": "10.1177/02783649241245726"
@@ -420,8 +420,8 @@
    "notes": "Two T265 rigs (4 fisheyes) + 5 IMUs.",
    "attribution": {
     "creator": "Yulin Yang (OpenMVIS)",
-    "license": "CC BY-NC 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "source_url": "https://huggingface.co/datasets/calibench-vi/datasets",
     "citation": "Y. Yang, P. Geneva, G. Huang, \"Multi-visual-inertial system: Analysis, calibration, and estimation\", IJRR 2024",
     "doi": "10.1177/02783649241245726"
@@ -499,8 +499,8 @@
    "notes": "Looper Robotics Insight-9 (SA16) sensor head: 2 global-shutter mono + 1 rolling-shutter colour camera + IMU; 10-recording repeatability group. Hosted with permission on calibench-vi/datasets (looper-insight9).",
    "attribution": {
     "creator": "Looper Robotics (hosted with permission)",
-    "license": "CC BY-NC 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "source_url": "https://huggingface.co/datasets/calibench-vi/datasets",
     "citation": "Y. Yang, P. Geneva, G. Huang, \"Multi-visual-inertial system: Analysis, calibration, and estimation\", IJRR 2024",
     "doi": "10.1177/02783649241245726"

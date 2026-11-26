@@ -19,9 +19,11 @@ produce by running MVIS on your own recordings (intrinsics, extrinsics, time
 offsets, residuals, plots, reports) are yours. You may publish them anywhere,
 including on commercial product pages, without a commercial licence.
 
-Results computed on a dataset follow that dataset's licence. For example,
-results from the CC BY-NC 4.0 VI-Rig data may not be used commercially
-without a dataset licence (licensing@openmvis.com).
+Results computed on a dataset follow that dataset's licence. The recordings
+hosted in `calibench-vi/datasets` (VI-Rig, the partner sets
+and the converted sets) are CC BY 4.0, so results from them may be used
+commercially, with attribution. A dataset under a NonCommercial licence keeps
+that limit.
 
 ## Names
 
@@ -32,9 +34,14 @@ certifies your product without written permission.
 
 ## Datasets
 
-Datasets referenced by MVIS have their own licences. The VI-Rig and Looper
-recordings are CC BY-NC 4.0 with gated access on Hugging Face; commercial use
-is available by request (licensing@openmvis.com). The converted third-party
-sets hosted there are CC BY 4.0, and TUM-VI is CC BY 4.0. Other third-party
+Datasets referenced by MVIS have their own licences. Every recording
+hosted in `calibench-vi/datasets` on Hugging Face (the VI-Rig captures,
+the partner sets and the converted third-party sets) is
+CC BY 4.0: you may use it for any purpose, commercial use included, with
+attribution. Access is gated (a form asks name, affiliation and intended
+use). Before 2026-11-25 the VI-Rig and partner recordings were
+CC BY-NC 4.0; a copy downloaded then may now be used under CC BY 4.0 as well.
+Device folders in `calibench-vi/community` keep their own licence, CC BY-NC
+4.0 unless the folder says otherwise. TUM-VI is CC BY 4.0. Other third-party
 datasets are not distributed here; download them from their owners under the
 owners' terms.

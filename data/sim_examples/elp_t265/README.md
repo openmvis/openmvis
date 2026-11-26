@@ -10,7 +10,7 @@ data = simulate(ex, seed=0)   # cams, t_imu, w_m, a_m, aux_imus
 
 ## Source
 
-Made from our VI-Rig recording `4imus_4cams_01` ([calibench-vi/datasets](https://huggingface.co/datasets/calibench-vi/datasets), gated, CC BY-NC 4.0).
+Made from our VI-Rig recording `4imus_4cams_01` ([calibench-vi/datasets](https://huggingface.co/datasets/calibench-vi/datasets), gated, CC BY 4.0).
 
 | Camera | Model | Image | Rate (Hz) | Shutter |
 |---|---|---|---|---|
@@ -30,6 +30,6 @@ The truth is not a real device calibration: it is moved off the solve it came fr
 
 ## Licence
 
-CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/); commercial use by request (licensing@openmvis.com).
+CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 
 If you use it, please cite Yang, Geneva, Huang, "Multi-visual-inertial system: Analysis, calibration, and estimation", IJRR 2024, doi:10.1177/02783649241245726.

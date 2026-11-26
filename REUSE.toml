@@ -1,20 +1,21 @@
 version = 1
 
 # Simulator examples (data/sim_examples/<name>/ and the packaged twin_gs): licence per example,
-# also in each setup.yaml header. The VI-Rig and Looper Insight-9 derived examples carry the
-# CC BY-NC 4.0 of the recordings they are built on (commercial use by request, licensing@openmvis.com).
+# also in each setup.yaml header. Each example carries the licence of the recordings it is built on:
+# the VI-Rig derived ones CC BY 4.0, the two Looper Insight-9 calibration-motion ones CC BY-NC 4.0
+# (commercial use by request, licensing@openmvis.com).
 
 [[annotations]]
 path = ["data/sim_examples/virig_4imus_3cams/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
-SPDX-License-Identifier = "CC-BY-NC-4.0"
+SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
 path = ["data/sim_examples/elp_t265/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
-SPDX-License-Identifier = "CC-BY-NC-4.0"
+SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
 path = ["data/sim_examples/tum_vi_raw/**"]

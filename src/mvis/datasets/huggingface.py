@@ -50,8 +50,8 @@ SOURCES_PATH = "recipes/SOURCES.md"
 UPLOADABLE_POLICIES = {"host_both_formats", "host_rosbag"}
 
 _LICENSE_NOTE = {
-    "own": "ours — Calibench original recording; gated, commercial use by request",
-    "partner": "partner recording, hosted with permission; gated",
+    "own": "ours — Calibench original recording; commercial use included; access is gated",
+    "partner": "partner recording, hosted with permission; commercial use included; access is gated",
     "cc_by": "inherited from the source dataset",
 }
 

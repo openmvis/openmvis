@@ -52,8 +52,9 @@ LICENSE_BUCKETS = {"own", "cc_by", "cc_by_nc_sa", "no_license", "citation_only",
                    "gpl_v2", "partner"}
 # Buckets whose terms forbid re-hosting: those datasets stay recipe_only and
 # are fetched from their original host. "own" (VI-Rig) and "partner"
-# (recordings hosted with their owner's permission) are CC BY-NC 4.0, gated
-# on the Hub; "cc_by" sets may be re-hosted as conversions with attribution.
+# (recordings hosted with their owner's permission) are CC BY 4.0, commercial
+# use included, behind the Hub's access form; "cc_by" sets may be re-hosted
+# as conversions with attribution.
 RESTRICTED_BUCKETS = {"cc_by_nc_sa", "no_license", "citation_only", "gpl_v2"}
 HOSTING_POLICIES = {"host_both_formats", "host_rosbag", "already_hosted",
                     "recipe_only"}
@@ -107,7 +108,7 @@ class Attribution:
     re-hosted conversions).
     """
     creator: str
-    license: str                      # "CC BY 4.0", "CC BY-NC 4.0", ...
+    license: str                      # "CC BY 4.0", "CC BY-NC-SA 3.0", ...
     license_url: str | None = None
     source_url: str | None = None     # homepage / original host
     citation: str | None = None       # one-line reference (authors, title, venue, year)
@@ -130,7 +131,7 @@ class CalibrationDataset:
 
     @property
     def license(self) -> str:
-        """Human-readable licence ("CC BY-NC 4.0") from the attribution block
+        """Human-readable licence ("CC BY 4.0") from the attribution block
         (every packaged entry has one); the raw bucket name without it."""
         if self.attribution is not None:
             return self.attribution.license

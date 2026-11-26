@@ -72,7 +72,8 @@ def test_exported_sources_md_carries_attribution(tmp_path):
         assert d.attribution.creator in text, d.key
         assert d.attribution.source_url in text, d.key
     assert "https://creativecommons.org/licenses/by/4.0/" in text
-    assert "https://creativecommons.org/licenses/by-nc/4.0/" in text
+    assert "https://creativecommons.org/licenses/by-nc-sa/3.0/" in text   # recipe-only sets keep theirs
+    assert "licenses/by-nc/4.0/" not in text       # nothing hosted is NC since 2026-11-25
     assert "Monado SLAM Dataset" in text          # citation present
     assert "approved" not in text                  # no bookkeeping leaks
 
@@ -255,11 +256,15 @@ def test_select_upload_card_keeps_other_sequences(tmp_path, monkeypatch):
 
 
 def test_dataset_card_licence_for_own_and_partner_recordings(tmp_path):
-    # VI-Rig (own) and Looper (partner) are CC BY-NC 4.0 and gated, not CC BY.
+    # VI-Rig (own) and Looper (partner) are CC BY 4.0, commercial use included,
+    # since 2026-11-25; access stays gated.
     catalog = DatasetCatalog.load()
     for key in ("mvis_4imus_3cams", "looper_insight9"):
         card = build_dataset_card(catalog.get(key), [], version_stamp="2026-11-08")
-        assert "CC BY-NC 4.0" in card, key
+        assert "CC BY 4.0" in card, key
+        assert "BY-NC" not in card, key
+        assert "commercial use included" in card, key
+        assert "by request" not in card, key
         assert "gated" in card, key
 
 

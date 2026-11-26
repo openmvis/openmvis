@@ -27,9 +27,9 @@ mvis datasets download --select mvis_4imus_3cams/april_01
 Datasets land in `$MVIS_DATASETS` (default `~/Datasets`); configs refer to them
 as `${MVIS_DATASETS}/...`.
 
-**Licence**: the VI-Rig (`virig-*`) data are **CC BY-NC 4.0** with gated access
-on the Hub (accept the terms with name, affiliation and intended use);
-commercial licences on request (licensing@openmvis.com). Users of the data
+**Licence**: the VI-Rig (`virig-*`) data are **CC BY 4.0**, commercial use
+included, with gated access on the Hub (accept the terms with name,
+affiliation and intended use). Users of the data
 cite Calibench-VI and the MVIS paper; the OpenMVIS project entry covers the
 toolbox. The three entries are in [release.md](release.md) and on
 [openmvis.com/about/contributors](https://openmvis.com/about/contributors/).

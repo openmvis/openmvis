@@ -110,9 +110,8 @@ mvis datasets list --dataset mvis_4imus_3cams
 mvis datasets download --select mvis_4imus_3cams/april_01
 ```
 
-Licence: VI-Rig (`virig-*`) data are CC BY-NC 4.0 with gated access (accept
-the terms on the Hub, then `hf auth login`); commercial licences on request
-(licensing@openmvis.com). Cite Calibench-VI, the MVIS paper and the OpenMVIS
+Licence: VI-Rig (`virig-*`) data are CC BY 4.0, commercial use included, with
+gated access (accept the terms on the Hub, then `hf auth login`). Cite Calibench-VI, the MVIS paper and the OpenMVIS
 project; the entries are in the skill's
 [release.md](../.claude/skills/mvis-calibrate/references/release.md) and on
 [openmvis.com/about/contributors](https://openmvis.com/about/contributors/).

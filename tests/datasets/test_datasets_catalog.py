@@ -57,14 +57,15 @@ def test_restricted_licenses_are_never_hosted(catalog):
 
 
 def test_hosted_sets_have_their_licence_and_attribution(catalog):
-    """F49/F51/F129: Looper is hosted (CC BY-NC 4.0, gated, with permission);
+    """F49/F51/F129: Looper is hosted (CC BY 4.0 since 2026-11-25, gated, with permission);
     every entry states its licence and every hosted one its attribution."""
     looper = catalog.get("looper_insight9")
     assert looper.hosting_policy == "host_rosbag"
-    assert looper.license == "CC BY-NC 4.0"
+    assert looper.license == "CC BY 4.0"
     for key in ("mvis_4imus_3cams", "mvis_4imus_3cams_aruco",
                 "mvis_4imus_4cams", "vi_sensor_rigs_5imus"):
-        assert catalog.get(key).license == "CC BY-NC 4.0", key
+        assert catalog.get(key).license == "CC BY 4.0", key
+        assert catalog.get(key).attribution.license_url.endswith("/licenses/by/4.0/"), key
     for key in ("tum_vi_raw", "tum_mic", "monado_mgc", "monado_moc",
                 "tum_event", "tum_rgbd_bag"):
         assert catalog.get(key).license == "CC BY 4.0", key
