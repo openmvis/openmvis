@@ -29,6 +29,6 @@ The truth is not a real device calibration: it is moved off the solve it came fr
 
 ## Licence
 
-CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/); commercial use by request (licensing@openmvis.com).
+CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 
-The motion and rig are built on our Looper Insight-9 recordings, which carry the same licence.
+The motion and rig are built on our own Looper Insight-9 recordings; commercial use is included.

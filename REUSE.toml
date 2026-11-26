@@ -1,9 +1,8 @@
 version = 1
 
 # Simulator examples (data/sim_examples/<name>/ and the packaged twin_gs): licence per example,
-# also in each setup.yaml header. Each example carries the licence of the recordings it is built on:
-# the VI-Rig derived ones CC BY 4.0, the two Looper Insight-9 calibration-motion ones CC BY-NC 4.0
-# (commercial use by request, licensing@openmvis.com).
+# also in each setup.yaml header. The examples built on recordings (VI-Rig, TUM-VI, the two Looper
+# Insight-9 calibration motions) are CC BY 4.0, commercial use included.
 
 [[annotations]]
 path = ["data/sim_examples/virig_4imus_3cams/**"]
@@ -27,13 +26,13 @@ SPDX-License-Identifier = "CC-BY-4.0"
 path = ["data/sim_examples/guide06c_60/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
-SPDX-License-Identifier = "CC-BY-NC-4.0"
+SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
 path = ["data/sim_examples/guide60b/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Yulin Yang <contact@openmvis.com>"
-SPDX-License-Identifier = "CC-BY-NC-4.0"
+SPDX-License-Identifier = "CC-BY-4.0"
 
 # the two regression twins: as the fixtures they come from (tests/data/twins, the repository licence)
 [[annotations]]

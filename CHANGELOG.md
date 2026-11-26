@@ -14,6 +14,9 @@ All notable changes to MVIS are recorded here. Versions follow
   `COMMERCIAL-LICENSE.md`, the agent docs and the generated dataset cards say so, and the simulator examples
   `virig_4imus_3cams` and `elp_t265` are CC BY 4.0. `calibench-vi/community` folders, third-party recipe
   datasets and the code licence (GPL-3.0-only plus a commercial licence) are unchanged.
+- The simulator examples `guide06c_60` and `guide60b`, built on our own Looper Insight-9 takes, are CC BY 4.0,
+  commercial use included (were CC BY-NC 4.0, commercial use by request). No simulator example is
+  NonCommercial any more.
 
 ## [0.4.1] — 2026-11-25
 

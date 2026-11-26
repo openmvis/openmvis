@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
-# SPDX-License-Identifier: CC-BY-NC-4.0
+# SPDX-License-Identifier: CC-BY-4.0
 # Simulator example guide06c_60: Calibration motion guide06c_60 (AprilGrid, 60 s). Written by the maintainers' example export; see README.md.
 # Frames: W world (gravity along -z), I base IMU (trajectory.txt), C camera, B board.
 # Times in s, lengths in m, angles in rad. T_CtoI maps camera to IMU coordinates.

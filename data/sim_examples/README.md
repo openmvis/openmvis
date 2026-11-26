@@ -21,16 +21,15 @@ fixed seeded perturbation (`mvis.simulation.twin.perturb`, decision D3), recorde
 | `virig_4imus_3cams` | VI-Rig 4 IMUs + 3 cameras, `april_01` twin | radtan + 2 fisheye, global | 4 | CC BY 4.0 |
 | `elp_t265` | VI-Rig ELP + T265, `imu_mixed_bag1` twin | fisheye global + ELP rolling | 2 | CC BY 4.0 |
 | `tum_vi_raw` | TUM-VI raw `dataset-calib-imu1` twin | 2 fisheye, global | 1 | CC BY 4.0 |
-| `guide06c_60` | calibration motion `guide06c_60`, AprilGrid, Looper Insight-9 | 1 fisheye, global | 1 | CC BY-NC 4.0 |
-| `guide60b` | calibration motion `guide60b`, chessboard, Looper Insight-9 | 1 fisheye, global | 1 | CC BY-NC 4.0 |
+| `guide06c_60` | calibration motion `guide06c_60`, AprilGrid, Looper Insight-9 | 1 fisheye, global | 1 | CC BY 4.0 |
+| `guide60b` | calibration motion `guide60b`, chessboard, Looper Insight-9 | 1 fisheye, global | 1 | CC BY 4.0 |
 | `twin_gs` | regression fixture `tests/data/twins/twin_gs.npz` (in the package) | 2 fisheye, global | 1 | GPL-3.0-only |
 | `twin_rs` | regression fixture `tests/data/twins/twin_rs.npz` | 2 fisheye, rolling | 1 | GPL-3.0-only |
 
 The wheel ships `twin_gs` only (`src/mvis/simulation/data/examples/`); the rest are in a source checkout.
-Licences are also in `REUSE.toml` and each `setup.yaml` header: each example carries the licence of
-the recordings it is built on. The VI-Rig derived examples are CC BY 4.0, commercial use included; the
-two calibration-motion examples on the Looper Insight-9 are CC BY-NC 4.0 (commercial use by request,
-licensing@openmvis.com). The maintainers regenerate the examples from their digital twins, the
+Licences are also in `REUSE.toml` and each `setup.yaml` header. The examples built on recordings (VI-Rig,
+TUM-VI and the two calibration motions on our own Looper Insight-9) are CC BY 4.0, commercial use
+included; the two regression twins carry the repository licence. The maintainers regenerate the examples from their digital twins, the
 regression fixtures and the calibration-motion study with an export script that is not part of the
 public tree; the examples themselves are the files to use.
 
