@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Yulin Yang <contact@openmvis.com>
 # SPDX-License-Identifier: GPL-3.0-only
 # Camera-only stereo calibration — WHUVID (Wuhan Univ.) ZED2, calibration recording myCalibrate.bag
-# (ROS 1, 74 s, /cam{0,1}/image_raw mono8 1280x720 19.7 Hz, /imu0 ~400 Hz). Baidu Netdisk, no licence stated.
+# (ROS 1, 74 s, /cam{0,1}/image_raw mono8 1280x720 19.7 Hz, /imu0 ~400 Hz). Baidu Netdisk; CC BY 4.0 per the WHUVID paper.
 # Board (from the authors' Kalibr report): AprilGrid 6x6, tag 20.8 mm, spacing 0.3, t36h11.
 # Reference: the dataset authors' Kalibr calibration (pinhole-radtan, baseline 120.1 mm).
 # Rolling shutter: readout estimated per camera (cam-IMU found ~14 ms).

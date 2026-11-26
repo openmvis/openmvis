@@ -71,5 +71,5 @@ Footer: `Calibrated with MVIS (pymvis <version>[, <sha>]).`
 ## Sharing the result
 A public result goes through
 [openmvis/calibench-submissions](https://github.com/openmvis/calibench-submissions):
-results records and community recordings (CC BY-NC 4.0 by default) are
+results records and community recordings (CC BY 4.0; see https://openmvis.com/about/license/#datasets) are
 reviewed and then appear on the openmvis.com Device wiki and leaderboard.

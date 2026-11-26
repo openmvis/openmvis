@@ -17,6 +17,10 @@ All notable changes to MVIS are recorded here. Versions follow
 - The simulator examples `guide06c_60` and `guide60b`, built on our own Looper Insight-9 takes, are CC BY 4.0,
   commercial use included (were CC BY-NC 4.0, commercial use by request). No simulator example is
   NonCommercial any more.
+- The recordings hosted in `calibench-vi/community` are CC BY 4.0, commercial use included, since
+  2026-11-26; this replaces "unchanged" for the community folders in the entry above. The licence of every
+  dataset is listed at https://openmvis.com/about/license/#datasets; `COMMERCIAL-LICENSE.md`, the agent docs
+  and the example config comments point there or follow it.
 
 ## [0.4.1] — 2026-11-25
 

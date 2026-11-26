@@ -41,7 +41,8 @@ CC BY 4.0: you may use it for any purpose, commercial use included, with
 attribution. Access is gated (a form asks name, affiliation and intended
 use). Before 2026-11-25 the VI-Rig and partner recordings were
 CC BY-NC 4.0; a copy downloaded then may now be used under CC BY 4.0 as well.
-Device folders in `calibench-vi/community` keep their own licence, CC BY-NC
-4.0 unless the folder says otherwise. TUM-VI is CC BY 4.0. Other third-party
+The recordings hosted in `calibench-vi/community` are CC BY 4.0 as well
+since 2026-11-26. TUM-VI is CC BY 4.0. Other third-party
 datasets are not distributed here; download them from their owners under the
-owners' terms.
+owners' terms. The licence of every dataset, with its history, is listed at
+https://openmvis.com/about/license/#datasets.
