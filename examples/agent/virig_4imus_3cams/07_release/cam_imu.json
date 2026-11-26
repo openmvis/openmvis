@@ -1,17 +1,49 @@
 {
   "input": "virig_4imus_3cams_april_01.bag",
   "ok": true,
-  "reproj_rms_px": 0.619,
-  "reproj_median_px": 0.254,
-  "reproj_p95_px": 0.757,
-  "solve_s": 611.5,
+  "reproj_rms_px": 0.609,
+  "reproj_median_px": 0.249,
+  "reproj_p95_px": 0.752,
+  "reproj_mean_px": 0.322,
+  "reproj_std_px": 0.517,
+  "reproj_p90_px": 0.572,
+  "reproj_max_px": 65.712,
+  "reproj_n_corners": 263672,
+  "reproj_inlier": {
+    "mean": 0.307,
+    "median": 0.248,
+    "std": 0.252,
+    "p90": 0.567,
+    "p95": 0.739,
+    "max": 2.997,
+    "n_corners": 263038,
+    "n_excluded": 634,
+    "threshold_px": 3.0
+  },
+  "solve_s": 757.0,
   "cams": [
     {
       "name": "cam0",
-      "td_ms": -2.878,
-      "reproj": 0.937,
-      "reproj_median": 0.281,
-      "reproj_p95": 0.768,
+      "td_ms": -4.336,
+      "reproj": 0.926,
+      "reproj_median": 0.275,
+      "reproj_p95": 0.776,
+      "reproj_mean": 0.368,
+      "reproj_std": 0.85,
+      "reproj_p90": 0.591,
+      "reproj_max": 65.712,
+      "reproj_n_corners": 74664,
+      "reproj_inlier": {
+        "mean": 0.328,
+        "median": 0.274,
+        "std": 0.259,
+        "p90": 0.58,
+        "p95": 0.748,
+        "max": 2.991,
+        "n_corners": 74287,
+        "n_excluded": 377,
+        "threshold_px": 3.0
+      },
       "intr": [
         449.45753,
         449.43336,
@@ -23,22 +55,59 @@
         -0.00016
       ],
       "p_CinI_mm": [
-        35.66,
-        -83.66,
-        26.84
+        35.07,
+        -78.77,
+        27.0
       ],
       "rotvec": [
-        0.00813,
-        -2.22059,
-        2.21847
-      ]
+        0.0074,
+        -2.21981,
+        2.2193
+      ],
+      "corner_accounting": {
+        "camera": 0,
+        "model": "radtan",
+        "n_corners": 74664,
+        "used": 74664,
+        "past_fold": 0,
+        "past_fold_pass1": 0,
+        "other_invalid": 0,
+        "no_pose_frames": 6,
+        "no_pose_corners": 148,
+        "discarded_pose_corners": 0,
+        "outliers": 0,
+        "filter_removed": 0,
+        "removed_invalid": 0,
+        "max_theta_deg": 55.27615993823668,
+        "max_theta_used_deg": 55.27615993823668,
+        "fold_deg": null,
+        "fold_level": "none",
+        "detected": 223972,
+        "not_in_solve": 149160
+      }
     },
     {
       "name": "cam1",
-      "td_ms": -3.663,
-      "reproj": 0.433,
-      "reproj_median": 0.238,
-      "reproj_p95": 0.752,
+      "td_ms": -5.14,
+      "reproj": 0.423,
+      "reproj_median": 0.234,
+      "reproj_p95": 0.742,
+      "reproj_mean": 0.3,
+      "reproj_std": 0.298,
+      "reproj_p90": 0.56,
+      "reproj_max": 17.111,
+      "reproj_n_corners": 94324,
+      "reproj_inlier": {
+        "mean": 0.295,
+        "median": 0.234,
+        "std": 0.249,
+        "p90": 0.557,
+        "p95": 0.735,
+        "max": 2.997,
+        "n_corners": 94190,
+        "n_excluded": 134,
+        "threshold_px": 3.0
+      },
       "intr": [
         286.8023,
         286.79046,
@@ -50,27 +119,64 @@
         0.00716
       ],
       "p_CinI_mm": [
-        68.75,
-        -114.72,
-        -28.0
+        67.94,
+        -109.83,
+        -27.83
       ],
       "rotvec": [
-        -0.01594,
-        -2.23563,
-        2.2059
+        -0.0165,
+        -2.23494,
+        2.20697
       ],
+      "corner_accounting": {
+        "camera": 1,
+        "model": "equidistant",
+        "n_corners": 94324,
+        "used": 94324,
+        "past_fold": 0,
+        "past_fold_pass1": 0,
+        "other_invalid": 0,
+        "no_pose_frames": 0,
+        "no_pose_corners": 0,
+        "discarded_pose_corners": 0,
+        "outliers": 0,
+        "filter_removed": 0,
+        "removed_invalid": 0,
+        "max_theta_deg": 65.61256429993004,
+        "max_theta_used_deg": 65.61256429993004,
+        "fold_deg": null,
+        "fold_level": "none",
+        "detected": 283128,
+        "not_in_solve": 188804
+      },
       "p_CtoC0_mm": [
-        -33.34,
-        54.63,
-        31.17
+        -33.11,
+        54.65,
+        31.13
       ]
     },
     {
       "name": "cam2",
-      "td_ms": -6.292,
-      "reproj": 0.431,
-      "reproj_median": 0.249,
-      "reproj_p95": 0.751,
+      "td_ms": -7.777,
+      "reproj": 0.423,
+      "reproj_median": 0.244,
+      "reproj_p95": 0.742,
+      "reproj_mean": 0.307,
+      "reproj_std": 0.291,
+      "reproj_p90": 0.568,
+      "reproj_max": 14.74,
+      "reproj_n_corners": 94684,
+      "reproj_inlier": {
+        "mean": 0.302,
+        "median": 0.243,
+        "std": 0.247,
+        "p90": 0.564,
+        "p95": 0.736,
+        "max": 2.997,
+        "n_corners": 94561,
+        "n_excluded": 123,
+        "threshold_px": 3.0
+      },
       "intr": [
         286.43203,
         286.20016,
@@ -82,182 +188,247 @@
         0.002
       ],
       "p_CinI_mm": [
-        5.07,
-        -114.5,
-        -27.79
+        4.26,
+        -109.62,
+        -27.65
       ],
       "rotvec": [
-        -0.02179,
-        -2.23125,
-        2.20696
+        -0.02236,
+        -2.23055,
+        2.20802
       ],
+      "corner_accounting": {
+        "camera": 2,
+        "model": "equidistant",
+        "n_corners": 94684,
+        "used": 94684,
+        "past_fold": 0,
+        "past_fold_pass1": 0,
+        "other_invalid": 0,
+        "no_pose_frames": 0,
+        "no_pose_corners": 0,
+        "discarded_pose_corners": 0,
+        "outliers": 0,
+        "filter_removed": 0,
+        "removed_invalid": 0,
+        "max_theta_deg": 67.78244610547158,
+        "max_theta_used_deg": 67.78244610547158,
+        "fold_deg": null,
+        "fold_level": "none",
+        "detected": 284400,
+        "not_in_solve": 189716
+      },
       "p_CtoC0_mm": [
-        30.34,
-        54.77,
-        30.84
+        30.57,
+        54.8,
+        30.82
       ]
     }
   ],
   "diagnostics": {
-    "iterations": 6,
-    "cam_chi2_dof": 0.1914,
-    "imu_chi2_dof": 0.0361,
+    "iterations": 5,
+    "cam_chi2_dof": 0.1857,
+    "imu_chi2_dof": 0.0066,
     "n_states": 2394,
     "max_iterations": 40
   },
+  "board": {
+    "T_BinW": [
+      [
+        0.999788,
+        -0.016305,
+        -0.012555,
+        -0.000892
+      ],
+      [
+        -0.006055,
+        0.349984,
+        -0.936736,
+        -0.00054
+      ],
+      [
+        0.019668,
+        0.936614,
+        0.349811,
+        -0.008684
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "g_inB": [
+      -0.019668,
+      -0.936614,
+      -0.349811
+    ],
+    "normal_tilt_deg": 69.5242,
+    "g_inplane_deg": -91.203
+  },
   "imu_model": "calyx",
   "Dw_diag": [
-    1.00354,
-    1.00319,
-    1.00226
+    0.99762,
+    0.99984,
+    0.99843
   ],
   "Da_diag": [
-    1.00016,
-    0.99817,
-    1.00314
+    0.99907,
+    0.9973,
+    1.0023
   ],
   "Dw_scale": [
-    1.00355,
-    1.00319,
-    1.00228
+    0.99762,
+    0.99984,
+    0.99845
   ],
   "Dw_shear": [
-    -0.00362,
-    0.00296,
-    -0.00451
+    -0.00264,
+    0.00409,
+    -0.0008
   ],
   "gyro_misalign_rotvec": [
-    0.001657,
-    0.002794,
-    -0.001275
+    0.001924,
+    0.002345,
+    0.000265
   ],
-  "t_ga_ms": -1.8266,
-  "t_ga_sigma_ms": 0.2206,
+  "gravity_mps2": 9.8013,
+  "gravity_source": "config",
+  "gravity_place": "Newark, Delaware",
+  "init_gates": {
+    "g_norm_ls": 9.8091,
+    "g_norm_ok": true,
+    "scale": 0.9945,
+    "scale_ok": true
+  },
+  "t_ga_ms": -0.4324,
+  "t_ga_sigma_ms": 0.275,
   "imus": [
     {
       "name": "gx3_25",
-      "td_ms": 1.476,
-      "t_ga_ms": 0.1102,
-      "t_ga_sigma_ms": 0.2072,
-      "chi2_dof": 0.009,
+      "td_ms": 0.005,
+      "t_ga_ms": 0.123,
+      "t_ga_sigma_ms": 0.2946,
+      "chi2_dof": 0.007,
       "p_IsinI_mm": [
-        -120.65,
-        -46.43,
-        -2.94
+        -122.64,
+        -47.01,
+        -3.13
       ],
       "rotvec": [
-        -2.23738,
-        -2.20489,
-        0.02446
+        -2.23804,
+        -2.20453,
+        0.02383
       ],
       "Dw_diag": [
-        1.00398,
-        1.00386,
-        0.99908
+        1.00169,
+        1.0023,
+        0.99693
       ],
       "Da_diag": [
-        0.99882,
-        1.00115,
-        1.00286
+        0.99762,
+        1.00015,
+        1.00226
       ],
       "Dw_scale": [
-        1.00398,
-        1.00387,
-        0.99909
+        1.00169,
+        1.00231,
+        0.99694
       ],
       "Dw_shear": [
-        -0.0031,
-        0.00319,
-        0.00136
+        -0.00318,
+        0.00043,
+        0.00037
       ],
       "gyro_misalign_rotvec": [
-        0.005038,
-        0.001569,
-        -0.002163
+        0.00452,
+        0.00129,
+        -0.00247
       ]
     },
     {
       "name": "gx3_35",
-      "td_ms": -0.104,
-      "t_ga_ms": -0.0137,
-      "t_ga_sigma_ms": 0.2245,
-      "chi2_dof": 0.01,
+      "td_ms": -1.543,
+      "t_ga_ms": 0.0627,
+      "t_ga_sigma_ms": 0.3111,
+      "chi2_dof": 0.007,
       "p_IsinI_mm": [
-        -79.93,
-        -45.47,
-        -3.48
+        -81.97,
+        -47.24,
+        -3.56
       ],
       "rotvec": [
-        -2.21702,
-        -2.22511,
-        0.01658
+        -2.21766,
+        -2.22444,
+        0.01566
       ],
       "Dw_diag": [
-        1.00329,
-        1.00317,
-        0.99804
+        1.00023,
+        1.00109,
+        0.9952
       ],
       "Da_diag": [
-        0.99863,
-        1.0003,
-        1.0029
+        0.99707,
+        0.99939,
+        1.00212
       ],
       "Dw_scale": [
-        1.00329,
-        1.00317,
-        0.99806
+        1.00024,
+        1.00109,
+        0.99522
       ],
       "Dw_shear": [
-        -0.00386,
-        0.00477,
-        -0.00272
+        -0.00375,
+        0.00114,
+        -0.00356
       ],
       "gyro_misalign_rotvec": [
-        0.003584,
-        0.001357,
-        -0.00359
+        0.003104,
+        0.000908,
+        -0.003959
       ]
     },
     {
       "name": "t265",
-      "td_ms": 4.819,
-      "t_ga_ms": -6.063,
-      "t_ga_sigma_ms": 0.1975,
-      "chi2_dof": 0.019,
+      "td_ms": 2.904,
+      "t_ga_ms": -6.6579,
+      "t_ga_sigma_ms": 0.2843,
+      "chi2_dof": 0.016,
       "p_IsinI_mm": [
-        57.71,
-        -109.21,
-        -31.49
+        56.27,
+        -106.93,
+        -31.23
       ],
       "rotvec": [
-        1.5853,
-        0.00708,
-        -0.00227
+        1.58391,
+        0.00683,
+        -0.00203
       ],
       "Dw_diag": [
-        1.00111,
-        1.00134,
-        1.00649
+        0.99988,
+        0.99943,
+        1.0042
       ],
       "Da_diag": [
-        1.02044,
-        1.02185,
-        1.01394
+        1.01935,
+        1.0209,
+        1.01374
       ],
       "Dw_scale": [
-        1.00133,
-        1.00134,
-        1.00662
+        1.00011,
+        0.99943,
+        1.00434
       ],
       "Dw_shear": [
-        0.00283,
-        0.00426,
-        0.00308
+        0.00322,
+        0.00423,
+        0.00038
       ],
       "gyro_misalign_rotvec": [
-        -0.000283,
-        -0.021005,
-        -0.001767
+        -0.001834,
+        -0.021345,
+        -0.001405
       ]
     }
   ]
