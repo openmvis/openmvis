@@ -1,17 +1,49 @@
 {
   "input": "dataset-calib-imu1.bag",
   "ok": true,
-  "reproj_rms_px": 0.202,
-  "reproj_median_px": 0.108,
-  "reproj_p95_px": 0.276,
-  "solve_s": 200.2,
+  "reproj_rms_px": 0.187,
+  "reproj_median_px": 0.106,
+  "reproj_p95_px": 0.263,
+  "reproj_mean_px": 0.122,
+  "reproj_std_px": 0.141,
+  "reproj_p90_px": 0.218,
+  "reproj_max_px": 15.348,
+  "reproj_n_corners": 139168,
+  "reproj_inlier": {
+    "mean": 0.121,
+    "median": 0.106,
+    "std": 0.084,
+    "p90": 0.218,
+    "p95": 0.263,
+    "max": 2.866,
+    "n_corners": 139157,
+    "n_excluded": 11,
+    "threshold_px": 3.0
+  },
+  "solve_s": 258.7,
   "cams": [
     {
       "name": "cam0",
-      "td_ms": 0.18,
-      "reproj": 0.211,
-      "reproj_median": 0.109,
-      "reproj_p95": 0.273,
+      "td_ms": 0.176,
+      "reproj": 0.191,
+      "reproj_median": 0.107,
+      "reproj_p95": 0.261,
+      "reproj_mean": 0.122,
+      "reproj_std": 0.147,
+      "reproj_p90": 0.217,
+      "reproj_max": 15.348,
+      "reproj_n_corners": 69528,
+      "reproj_inlier": {
+        "mean": 0.121,
+        "median": 0.107,
+        "std": 0.085,
+        "p90": 0.217,
+        "p95": 0.261,
+        "max": 2.866,
+        "n_corners": 69523,
+        "n_excluded": 5,
+        "threshold_px": 3.0
+      },
       "intr": [
         382.04153,
         382.1591,
@@ -23,22 +55,59 @@
         -0.00031
       ],
       "p_CinI_mm": [
-        46.45,
-        -69.16,
-        -46.06
+        46.43,
+        -69.06,
+        -46.02
       ],
       "rotvec": [
-        -0.05347,
-        -2.1761,
-        2.25266
-      ]
+        -0.05345,
+        -2.17612,
+        2.25277
+      ],
+      "corner_accounting": {
+        "camera": 0,
+        "model": "equidistant",
+        "n_corners": 69528,
+        "used": 69528,
+        "past_fold": 0,
+        "past_fold_pass1": 0,
+        "other_invalid": 0,
+        "no_pose_frames": 0,
+        "no_pose_corners": 0,
+        "discarded_pose_corners": 0,
+        "outliers": 0,
+        "filter_removed": 0,
+        "removed_invalid": 0,
+        "max_theta_deg": 79.70844787033973,
+        "max_theta_used_deg": 79.70844787033973,
+        "fold_deg": null,
+        "fold_level": "none",
+        "detected": 139000,
+        "not_in_solve": 69472
+      }
     },
     {
       "name": "cam1",
-      "td_ms": 0.183,
-      "reproj": 0.193,
-      "reproj_median": 0.107,
-      "reproj_p95": 0.278,
+      "td_ms": 0.179,
+      "reproj": 0.182,
+      "reproj_median": 0.105,
+      "reproj_p95": 0.265,
+      "reproj_mean": 0.121,
+      "reproj_std": 0.136,
+      "reproj_p90": 0.218,
+      "reproj_max": 14.595,
+      "reproj_n_corners": 69640,
+      "reproj_inlier": {
+        "mean": 0.12,
+        "median": 0.105,
+        "std": 0.083,
+        "p90": 0.218,
+        "p95": 0.265,
+        "max": 2.853,
+        "n_corners": 69634,
+        "n_excluded": 6,
+        "threshold_px": 3.0
+      },
       "intr": [
         381.14318,
         381.26166,
@@ -50,56 +119,121 @@
         -0.00065
       ],
       "p_CinI_mm": [
-        -54.21,
-        -66.57,
-        -49.77
+        -54.22,
+        -66.48,
+        -49.73
       ],
       "rotvec": [
-        -0.05283,
-        -2.22964,
-        2.20009
+        -0.05282,
+        -2.22967,
+        2.20018
       ],
+      "corner_accounting": {
+        "camera": 1,
+        "model": "equidistant",
+        "n_corners": 69640,
+        "used": 69640,
+        "past_fold": 0,
+        "past_fold_pass1": 0,
+        "other_invalid": 0,
+        "no_pose_frames": 0,
+        "no_pose_corners": 0,
+        "discarded_pose_corners": 0,
+        "outliers": 0,
+        "filter_removed": 0,
+        "removed_invalid": 0,
+        "max_theta_deg": 81.55185308299286,
+        "max_theta_used_deg": 81.55185308299286,
+        "fold_deg": null,
+        "fold_level": "none",
+        "detected": 139308,
+        "not_in_solve": 69668
+      },
       "p_CtoC0_mm": [
         100.74,
-        1.89,
-        0.39
+        1.88,
+        0.38
       ]
     }
   ],
   "diagnostics": {
     "iterations": 5,
-    "cam_chi2_dof": 0.0205,
-    "imu_chi2_dof": 0.5248,
+    "cam_chi2_dof": 0.0174,
+    "imu_chi2_dof": 0.0208,
     "n_states": 978,
     "max_iterations": 40
   },
+  "board": {
+    "T_BinW": [
+      [
+        0.995593,
+        0.017737,
+        -0.092084,
+        -0.163213
+      ],
+      [
+        -0.093694,
+        0.14696,
+        -0.984695,
+        -0.048718
+      ],
+      [
+        -0.003933,
+        0.988983,
+        0.147974,
+        -0.027066
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "g_inB": [
+      0.003933,
+      -0.988983,
+      -0.147974
+    ],
+    "normal_tilt_deg": 81.4904,
+    "g_inplane_deg": -89.7721
+  },
   "imu_model": "calyx",
   "Dw_diag": [
-    0.94603,
-    1.09426,
-    1.01822
+    0.94595,
+    1.09419,
+    1.01813
   ],
   "Da_diag": [
-    1.00768,
-    1.00753,
-    0.97354
+    1.00742,
+    1.00714,
+    0.97318
   ],
   "Dw_scale": [
-    0.94606,
-    1.0943,
-    1.01825
+    0.94598,
+    1.09423,
+    1.01816
   ],
   "Dw_shear": [
-    0.00067,
-    -0.0003,
-    0.0055
+    0.00079,
+    -0.00028,
+    0.00551
   ],
   "gyro_misalign_rotvec": [
-    0.007974,
-    -0.008144,
-    -0.000475
+    0.007937,
+    -0.008189,
+    -0.000393
   ],
-  "t_ga_ms": -1.5749,
+  "gravity_mps2": 9.8077,
+  "gravity_source": "config",
+  "gravity_place": "TUM Garching, Germany",
+  "init_gates": {
+    "g_norm_ls": 10.4281,
+    "g_norm_ok": false,
+    "scale": 0.976,
+    "scale_ok": true
+  },
+  "t_ga_ms": -1.5779,
   "t_ga_sigma_ms": 0.0289,
   "imus": []
 }

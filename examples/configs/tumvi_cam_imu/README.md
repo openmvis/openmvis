@@ -46,22 +46,23 @@ both steps from the same place.
 
 ## Results (imu1, 45 s window)
 
-Solved at 9.81 before 2026-11-25. With the config's `gravity: 9.8077` the accel scale moves by
-about −0.02 %.
+Solved with MVIS 0.4.1 at the config's `gravity: 9.8077` (2026-11-25). Against the same run at 9.81, gravity
+moves only the accel scale, by about −0.02 %. The earlier table (td ≈ −0.7 ms, lever ~1 mm shorter) came from
+older MVIS code, not from gravity.
 
-| model | mode | reproj | cam0 lever (mm) | baseline | td |
+| model | mode | reproj RMS | cam0 lever (mm) | baseline | td |
 |---|---|---|---|---|---|
-| omni_radtan | stereo, pinned | 0.273 px | [45.0, −68.7, −43.2] | 100.8 mm | −0.73 ms |
-| equidistant | stereo, pinned | 0.277 px | [44.7, −70.1, −43.7] | 100.8 mm | −0.72 ms |
-| double_sphere | cam0, pinned | 0.275 px | [44.3, −68.5, −43.9] | — | −0.71 ms |
-| eucm | cam0, pinned | 0.275 px | [44.3, −68.3, −43.9] | — | −0.71 ms |
-| fov | cam0, pinned | 0.288 px | [44.0, −65.2, −44.0] | — | −0.68 ms |
+| omni_radtan | stereo, pinned | 0.123 px | [46.1, −69.7, −44.0] | 100.8 mm | +0.16 ms |
+| equidistant | stereo, pinned | 0.136 px | [45.4, −71.3, −44.4] | 100.8 mm | +0.16 ms |
+| double_sphere | cam0, pinned | 0.124 px | [45.3, −69.5, −44.9] | — | +0.17 ms |
+| eucm | cam0, pinned | 0.124 px | [45.3, −69.6, −44.9] | — | +0.17 ms |
+| fov | cam0, pinned | 0.163 px | [45.0, −66.7, −44.6] | — | +0.17 ms |
 | **Kalibr (omni)** | reference | 0.11 px | **[46.2, −70.9, −43.7]** | **100.94 mm** | ~0 |
 
-Every model lands on the same physical lever (~[44, −68, −44] mm) and time offset
-(~−0.7 ms); omni_radtan / equidistant reproduce Kalibr's lever to ≤2 mm and the
+Every model lands on the same physical lever (~[45, −70, −44] mm) and time offset
+(~+0.17 ms); omni_radtan / equidistant reproduce Kalibr's lever to ≤1.5 mm and the
 stereo baseline to ≤0.15 mm. The omni_radtan run agrees across all four bags
-(baseline 100.8–101.1 mm, lever within ~1 mm). Across the four bags the freed IMU
+(baseline 100.8 mm, lever within ~1 mm). Across the four bags the freed IMU
 intrinsics (`Dw`/`Da`) are consistent to <1 %.
 
 ## Notes
