@@ -7,20 +7,13 @@ All notable changes to MVIS are recorded here. Versions follow
 
 ### Changed
 
-- Dataset licence: every recording hosted in `calibench-vi/datasets` (the VI-Rig captures,
-  the partner sets, and the converted sets as before) is CC BY 4.0, commercial use
-  included, since 2026-11-25. Access stays gated. This replaces CC BY-NC 4.0 with commercial use on request
-  for the VI-Rig (since 2026-09-11) and partner (since 2026-11-03) recordings. The catalog,
-  `COMMERCIAL-LICENSE.md`, the agent docs and the generated dataset cards say so, and the simulator examples
-  `virig_4imus_3cams` and `elp_t265` are CC BY 4.0. `calibench-vi/community` folders, third-party recipe
-  datasets and the code licence (GPL-3.0-only plus a commercial licence) are unchanged.
-- The simulator examples `guide06c_60` and `guide60b`, built on our own Looper Insight-9 takes, are CC BY 4.0,
-  commercial use included (were CC BY-NC 4.0, commercial use by request). No simulator example is
-  NonCommercial any more.
-- The recordings hosted in `calibench-vi/community` are CC BY 4.0, commercial use included, since
-  2026-11-26; this replaces "unchanged" for the community folders in the entry above. The licence of every
-  dataset is listed at https://openmvis.com/about/license/#datasets; `COMMERCIAL-LICENSE.md`, the agent docs
-  and the example config comments point there or follow it.
+- Dataset licence: every recording hosted in `calibench-vi/datasets` and `calibench-vi/community` is
+  CC BY 4.0, commercial use included. Access stays gated. The licence of every dataset is listed at
+  https://openmvis.com/about/license/#datasets; the catalog, `COMMERCIAL-LICENSE.md`, the agent docs, the
+  generated dataset cards and the example config comments follow it. Third-party recipe datasets and the code
+  licence (GPL-3.0-only plus a commercial licence) are unchanged.
+- The simulator examples `virig_4imus_3cams`, `elp_t265`, `guide06c_60` and `guide60b` are CC BY 4.0,
+  commercial use included.
 
 ## [0.4.1] — 2026-11-25
 

@@ -39,10 +39,8 @@ hosted in `calibench-vi/datasets` on Hugging Face (the VI-Rig captures,
 the partner sets and the converted third-party sets) is
 CC BY 4.0: you may use it for any purpose, commercial use included, with
 attribution. Access is gated (a form asks name, affiliation and intended
-use). Before 2026-11-25 the VI-Rig and partner recordings were
-CC BY-NC 4.0; a copy downloaded then may now be used under CC BY 4.0 as well.
-The recordings hosted in `calibench-vi/community` are CC BY 4.0 as well
-since 2026-11-26. TUM-VI is CC BY 4.0. Other third-party
+use). The recordings hosted in `calibench-vi/community` are CC BY 4.0 as
+well. TUM-VI is CC BY 4.0. Other third-party
 datasets are not distributed here; download them from their owners under the
-owners' terms. The licence of every dataset, with its history, is listed at
+owners' terms. The licence of every dataset is listed at
 https://openmvis.com/about/license/#datasets.
